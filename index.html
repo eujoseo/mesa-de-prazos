@@ -1,0 +1,1056 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
+<title>Mesa de Prazos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,500;7..72,650&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: mesa de trabalho — faixa de abas por promotoria, fila de expedientes ordenada por urgência, checklist do dia no topo. */
+:root{
+  --bg:#F2F5F6; --surface:#FFFFFF; --sunk:#E8EDF0; --ink:#15212B; --muted:#5A6875; --line:#D7DFE4;
+  --accent:#22577A; --accent-soft:#E1ECF3; --accent-ink:#FFFFFF;
+  --danger:#B42318; --danger-soft:#FDECEA; --warn:#A15C07; --warn-soft:#FDF1DC; --ok:#2B7A4B; --ok-soft:#E3F3E9; --info-soft:#EDF1F7;
+  --c-gaeco:#3A4892; --c-caapora:#18756A; --c-guarabira:#93630F;
+  --note:#FFF6DC; --note-line:#EBD49A; --note-ink:#4A3A10; --hero:#E6EEF2;
+  --f-display:"Literata", Georgia, "Times New Roman", serif;
+  --f-body:"Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r:8px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E151B; --surface:#162029; --sunk:#111A21; --ink:#E4EAEE; --muted:#93A2AE; --line:#263541;
+  --accent:#7FB4D8; --accent-soft:#1B2F3D; --accent-ink:#0E151B;
+  --danger:#F4877C; --danger-soft:#3A1B1A; --warn:#F2B24C; --warn-soft:#35270F; --ok:#73C995; --ok-soft:#14301F; --info-soft:#18232D;
+  --c-gaeco:#9AA6EC; --c-caapora:#5FC9B9; --c-guarabira:#E1AE52; --note:#2A2414; --note-line:#4D4122; --note-ink:#F1DFAE; --hero:#13202A; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0E151B; --surface:#162029; --sunk:#111A21; --ink:#E4EAEE; --muted:#93A2AE; --line:#263541;
+  --accent:#7FB4D8; --accent-soft:#1B2F3D; --accent-ink:#0E151B;
+  --danger:#F4877C; --danger-soft:#3A1B1A; --warn:#F2B24C; --warn-soft:#35270F; --ok:#73C995; --ok-soft:#14301F; --info-soft:#18232D;
+  --c-gaeco:#9AA6EC; --c-caapora:#5FC9B9; --c-guarabira:#E1AE52; --note:#2A2414; --note-line:#4D4122; --note-ink:#F1DFAE; --hero:#13202A; color-scheme:dark }
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+.wrap{max-width:1080px;margin:0 auto;padding-block:20px 60px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--f-display);font-weight:650;text-wrap:balance;margin:0;letter-spacing:-.01em}
+h1{font-size:1.75rem} h2{font-size:1.25rem} h3{font-size:1.02rem}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)} .small{font-size:.86rem}
+.lbl{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+a{color:var(--accent)}
+button,select,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.top{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between;margin-bottom:18px}
+.top .sub{font-size:.92rem;color:var(--muted)}
+.sum{display:flex;gap:8px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:.8rem;font-weight:600;background:var(--sunk);color:var(--ink);white-space:nowrap}
+.chip.danger{background:var(--danger-soft);color:var(--danger)} .chip.warn{background:var(--warn-soft);color:var(--warn)} .chip.ok{background:var(--ok-soft);color:var(--ok)} .chip.info{background:var(--accent-soft);color:var(--accent)}
+.tabs{display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--line);margin-bottom:22px;scrollbar-width:thin}
+.tab{border:0;background:none;padding:10px 14px;font-weight:600;color:var(--muted);border-bottom:3px solid transparent;white-space:nowrap;display:flex;gap:8px;align-items:center}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.tab .dot{width:8px;height:8px;border-radius:50%}
+.tab .n{font-family:var(--f-mono);font-size:.75rem;background:var(--sunk);padding:0 6px;border-radius:999px}
+.dot.gaeco{background:var(--c-gaeco)} .dot.caapora{background:var(--c-caapora)} .dot.guarabira{background:var(--c-guarabira)}
+section+section{margin-top:28px}
+.sechead{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:baseline;justify-content:space-between;margin-bottom:12px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.ck h3{display:flex;align-items:center;gap:8px}
+.ck ol{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:6px}
+.ck li label{display:flex;gap:10px;align-items:flex-start;padding:6px 8px;border-radius:6px;cursor:pointer}
+.ck li label:hover{background:var(--sunk)}
+.ck li input{margin-top:3px;accent-color:var(--accent);width:16px;height:16px;flex:none}
+.ck li.done span{text-decoration:line-through;color:var(--muted)}
+.ck .step{font-family:var(--f-mono);font-size:.72rem;color:var(--muted);min-width:1.4em}
+.ck .foot{display:flex;justify-content:space-between;align-items:center;margin-top:10px;gap:8px;flex-wrap:wrap}
+.bar{height:6px;border-radius:999px;background:var(--sunk);overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--accent);border-radius:999px;transition:width .3s}
+.bar.ok>i{background:var(--ok)}
+.prog{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.prog .bar{flex:1;min-width:140px;height:8px}
+.prog strong{font-family:var(--f-mono);font-size:1.4rem;font-weight:500}
+.paste textarea{width:100%;min-height:120px;border:1px dashed var(--line);border-radius:6px;background:var(--sunk);padding:10px;font-family:var(--f-mono);font-size:.8rem;resize:vertical}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--line);background:var(--surface);padding:7px 14px;border-radius:6px;font-weight:600;font-size:.88rem}
+.btn:hover{border-color:var(--accent)}
+.btn.pri{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.sm{padding:4px 10px;font-size:.8rem}
+.btn.ghost{border-color:transparent;background:none;color:var(--accent)}
+.note{padding:10px 12px;border-radius:6px;background:var(--accent-soft);font-size:.88rem}
+.note.warn{background:var(--warn-soft)}
+.group{margin-top:18px}
+.group>.gh{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.list{display:grid;gap:8px}
+.item{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;display:grid;gap:8px;border-left:4px solid var(--line)}
+.item.u-vencido,.item.u-atrasado{border-left-color:var(--danger)} .item.u-hoje{border-left-color:var(--warn)} .item.u-amanha{border-left-color:var(--warn)} .item.u-semana{border-left-color:var(--accent)}
+.item .l1{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
+.item .proc{font-family:var(--f-mono);font-weight:500;font-size:.95rem}
+.item .cls{font-weight:600}
+.item .meta-line{font-size:.85rem;color:var(--muted);min-width:0;overflow-wrap:anywhere}
+.dates{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:4px 12px;background:var(--sunk);border-radius:6px;padding:8px 10px}
+.dates div{display:grid}
+.dates b{font-family:var(--f-mono);font-weight:500;font-size:.9rem;font-variant-numeric:tabular-nums}
+.dates .hl b{color:var(--accent)}
+.dates .bad b{color:var(--danger)}
+.ctrl{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.seg button{border:0;background:var(--surface);padding:4px 9px;font-family:var(--f-mono);font-size:.78rem;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.ctrl input[type=text]{flex:1;min-width:160px;border:1px solid var(--line);border-radius:6px;padding:5px 9px;background:var(--surface);font-size:.86rem}
+details.more summary{cursor:pointer;font-size:.82rem;color:var(--accent);font-weight:600}
+details.more .in{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin-top:8px}
+details.more label{display:grid;gap:2px;font-size:.8rem;color:var(--muted)}
+details.more input{border:1px solid var(--line);border-radius:6px;padding:4px 8px;background:var(--surface)}
+.tag{font-family:var(--f-mono);font-size:.72rem;padding:1px 6px;border-radius:4px;background:var(--sunk);color:var(--muted)}
+.pt{font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.pt.gaeco{color:var(--c-gaeco)} .pt.caapora{color:var(--c-caapora)} .pt.guarabira{color:var(--c-guarabira)}
+.empty{padding:22px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:var(--r);font-size:.9rem}
+.subtabs{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 12px}
+.subtabs button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 12px;font-size:.84rem;font-weight:600}
+.subtabs button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.feito{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;padding:9px 12px;background:var(--surface);border:1px solid var(--line);border-radius:6px}
+.feito .grow{flex:1;min-width:180px;font-size:.88rem}
+.cfg{display:grid;gap:14px}
+.cfg .f{display:grid;gap:4px}
+.cfg select,.cfg input,.cfg textarea{border:1px solid var(--line);border-radius:6px;padding:6px 9px;background:var(--surface);max-width:100%}
+.cfg textarea{min-height:70px;font-family:var(--f-mono);font-size:.82rem}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:8px;font-size:.88rem;font-weight:600;z-index:20;max-width:calc(100% - 32px)}
+.status{font-size:.78rem;color:var(--muted)}
+.res{margin-top:10px;display:grid;gap:6px}
+.ign{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;font-size:.84rem;padding:6px 10px;background:var(--sunk);border-radius:6px}
+/* cabeçalho do dia */
+.hero{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px 28px;align-items:center;background:var(--hero);border-radius:14px;padding:22px 22px 20px;margin-bottom:18px}
+.hero h1{font-size:clamp(1.5rem,4vw,2.1rem)}
+.hero .sum{margin-top:10px}
+.dayboard{display:flex;gap:22px;align-items:center;flex-wrap:wrap}
+.ring{position:relative;width:96px;height:96px;flex:none}
+.ring svg{width:96px;height:96px;transform:rotate(-90deg)}
+.ring .c{position:absolute;inset:0;display:grid;place-content:center;text-align:center;line-height:1.1}
+.ring .c b{font-family:var(--f-mono);font-size:1.35rem;font-weight:500}
+.ring .c span{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.week{display:grid;gap:6px}
+.week .bars{display:flex;gap:6px;align-items:flex-end;height:54px}
+.week .bars div{display:grid;justify-items:center;gap:3px;font-size:.66rem;color:var(--muted)}
+.week .bars i{display:block;width:16px;border-radius:4px 4px 2px 2px;background:var(--line);min-height:3px}
+.week .bars .t i{background:var(--accent)}
+.week .bars .t{color:var(--ink);font-weight:700}
+.hint{font-size:.88rem;color:var(--ink);max-width:24ch}
+@media (max-width:640px){.hero{grid-template-columns:1fr}}
+/* duas colunas na promotoria */
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:20px;align-items:start}
+.layout aside{display:grid;gap:14px;position:sticky;top:calc(12px + env(safe-area-inset-top,0px))}
+@media (max-width:900px){.layout{grid-template-columns:1fr}.layout aside{position:static;order:-1}}
+/* lembretes */
+.notes{background:var(--note);border:1px solid var(--note-line);border-radius:var(--r);padding:14px;color:var(--note-ink)}
+.notes h3{color:var(--note-ink);display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.notes ul{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:8px}
+.notes li{background:color-mix(in srgb,var(--surface) 70%,transparent);border-radius:6px;padding:8px 10px;display:grid;gap:4px;border:1px solid transparent}
+.notes li.pin{border-color:var(--note-line)}
+.notes li p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--ink);font-size:.9rem}
+.notes .nm{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;font-size:.74rem;color:var(--muted)}
+.notes .nm button{border:0;background:none;padding:0;color:var(--accent);font-size:.74rem;font-weight:600}
+.notes .nm button.del-armed{color:var(--danger)}
+.notes form{display:grid;gap:6px;margin-top:10px}
+.notes textarea,.notes input{border:1px solid var(--note-line);border-radius:6px;padding:7px 9px;background:var(--surface);color:var(--ink);font-size:.88rem;width:100%}
+.notes textarea{min-height:64px;resize:vertical}
+.pinstrip{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+.pinstrip .notes li{background:none;padding:0}
+.focus .item{box-shadow:0 1px 0 var(--line)}
+.why{display:grid;gap:2px;padding:8px 10px;border-radius:6px;background:var(--accent-soft);font-size:.9rem}
+.why .lbl{color:inherit;opacity:.8}
+.why-vencido,.why-atrasado{background:var(--danger-soft);color:var(--danger)} .why-vencido span+span,.why-atrasado span+span{color:var(--ink)}
+.why-hoje,.why-amanha{background:var(--warn-soft);color:var(--warn)} .why-hoje span+span,.why-amanha span+span{color:var(--ink)}
+.boxcard{text-align:left;font:inherit;color:inherit;cursor:pointer;display:grid;gap:2px}
+.boxcard:hover{border-color:var(--accent)}
+.pinstrip.one{grid-template-columns:1fr}
+/* jornada */
+.jornada{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:18px;display:grid;gap:12px}
+.jh{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
+.jh .tot{font-family:var(--f-mono);font-size:1.05rem;font-weight:500}
+.jh .bar{flex:1;min-width:120px;height:8px}
+.timers{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.tmr{border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:grid;gap:6px;background:var(--bg)}
+.tmr.on{border-color:var(--accent);background:var(--accent-soft)}
+.tmr.out{border-color:var(--danger)}
+.tmr .top2{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.tmr .clock{font-family:var(--f-mono);font-size:1.6rem;font-weight:500;font-variant-numeric:tabular-nums;line-height:1.1}
+.tmr.out .clock{color:var(--danger)}
+.tmr .row .btn{flex:1}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="hero">
+    <div>
+      <div class="lbl">Mesa de Prazos · substituições MPPB</div>
+      <h1 id="greet">Olá, José</h1>
+      <div class="sub muted" id="hoje-txt"></div>
+      <div class="sum" id="sum"></div>
+    </div>
+    <div class="dayboard" id="dayboard"></div>
+  </header>
+  <section class="jornada" id="jornada" aria-label="Jornada de hoje"></section>
+  <nav class="tabs" role="tablist" id="tabs"></nav>
+  <main id="view"></main>
+  <p class="status" id="status"></p>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
+<script>
+/* Lógica pura da Mesa de Prazos — usada pela página e pelo script de carga. */
+(function (root) {
+  const pad = n => String(n).padStart(2, '0');
+  const iso = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  const fromBR = s => { const m = /(\d{2})\/(\d{2})\/(\d{4})/.exec(s || ''); return m ? new Date(+m[3], +m[2] - 1, +m[1]) : null; };
+  const fromISO = s => { if (!s) return null; const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+  const br = d => d ? pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear() : '—';
+  const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+  const diffDays = (a, b) => Math.round((fromISO(iso(b)) - fromISO(iso(a))) / 864e5);
+
+  function easter(y) {
+    const a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4,
+      f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30,
+      i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451),
+      mo = Math.floor((h + l - 7 * m + 114) / 31), da = ((h + l - 7 * m + 114) % 31) + 1;
+    return new Date(y, mo - 1, da);
+  }
+  const holidayCache = {};
+  function holidaysFor(y, extras) {
+    const key = y + '|' + (extras || []).join(',');
+    if (holidayCache[key]) return holidayCache[key];
+    const e = easter(y);
+    const set = new Set(['01-01', '04-21', '05-01', '08-05', '09-07', '10-12', '11-02', '11-15', '11-20', '12-25'].map(s => y + '-' + s));
+    [-48, -47, -2, 60].forEach(off => set.add(iso(addDays(e, off)))); // carnaval, sexta santa, corpus christi
+    (extras || []).forEach(s => { const d = fromBR(s); if (d) set.add(iso(d)); });
+    return (holidayCache[key] = set);
+  }
+  function isBusiness(d, cfg) {
+    const w = d.getDay(); if (w === 0 || w === 6) return false;
+    if (holidaysFor(d.getFullYear(), cfg && cfg.feriadosExtras).has(iso(d))) return false;
+    if (cfg && cfg.recessoUteis && cfg._modoUteis) {
+      const md = pad(d.getMonth() + 1) + pad(d.getDate());
+      if (md >= '1220' || md <= '0120') return false;
+    }
+    return true;
+  }
+  function addBusiness(d, n, cfg) { let x = new Date(d), c = 0; while (c < n) { x = addDays(x, 1); if (isBusiness(x, cfg)) c++; } return x; }
+  function subBusiness(d, n, cfg) { let x = new Date(d), c = 0; while (c < n) { x = addDays(x, -1); if (isBusiness(x, cfg)) c++; } return x; }
+  function nextBusiness(d, cfg) { let x = new Date(d); while (!isBusiness(x, cfg)) x = addDays(x, 1); return x; }
+
+  /* Prazo final: a contagem começa no dia seguinte à ciência (tácita = data limite). */
+  function prazoFinal(item, cfg) {
+    if (item.limiteManifestacao) return fromISO(item.limiteManifestacao);
+    const ci = fromISO(item.cienciaReal) || fromISO(item.limiteCiencia);
+    if (!ci || !item.prazoDias) return null;
+    const regra = (cfg.promotorias[item.prom] || {}).contagem || 'corridos';
+    if (regra === 'uteis') return addBusiness(ci, item.prazoDias, Object.assign({}, cfg, { _modoUteis: true }));
+    return nextBusiness(addDays(ci, item.prazoDias), cfg);
+  }
+  /* Meta interna: quando eu devo ter feito. */
+  function metaInterna(item, cfg) {
+    if (item.metaManual) return fromISO(item.metaManual);
+    if (item.tipo === 'extra') return fromISO(item.vencimento);
+    const p = cfg.promotorias[item.prom] || {}, pf = prazoFinal(item, cfg);
+    let m = null;
+    const ci = fromISO(item.cienciaReal) || fromISO(item.limiteCiencia);
+    if (p.meta === 'aposCiencia') {
+      if (ci) m = addBusiness(ci, p.metaDias || 3, cfg);
+    } else if (p.meta === 'ciencia' && (item.cienciaReal || (cfg._hoje && item.limiteCiencia && item.limiteCiencia < cfg._hoje))) {
+      if (pf) m = subBusiness(pf, 1, cfg); // ciência registrada ou tácita: meta 1 dia útil antes do prazo final
+    } else if (p.meta === 'conclusao') {
+      const base = fromISO(item.conclusao) || fromISO(item.expedicao);
+      if (base) m = addBusiness(base, p.metaDias || 3, cfg);
+    } else if (p.meta === 'ciencia') {
+      m = fromISO(item.limiteCiencia);
+      if (m && !isBusiness(m, cfg)) m = subBusiness(m, 1, cfg);
+    } else if (pf) {
+      m = subBusiness(pf, p.metaDias || 1, cfg);
+    }
+    if (pf && m && m > pf) m = pf;
+    return m || pf;
+  }
+  function recompute(item, cfg) {
+    const pf = prazoFinal(item, cfg), mt = metaInterna(item, cfg);
+    item.prazoFinal = pf ? iso(pf) : (item.tipo === 'extra' ? item.vencimento : null);
+    item.meta = mt ? iso(mt) : null;
+    return item;
+  }
+  function urgencia(item, hoje, cfg) {
+    const ref = fromISO(item.meta);
+    if (!ref) return { key: 'sem', label: 'Sem data', ord: 9 };
+    const d = diffDays(hoje, ref);
+    const pf = fromISO(item.prazoFinal);
+    if (pf && diffDays(hoje, pf) < 0) return { key: 'vencido', label: 'Prazo vencido', ord: 0, d };
+    if (d < 0) return { key: 'atrasado', label: 'Meta passou', ord: 1, d };
+    if (d === 0) return { key: 'hoje', label: 'Hoje', ord: 2, d };
+    let ub = 0, x = new Date(hoje); while (iso(x) < iso(ref)) { x = addDays(x, 1); if (isBusiness(x, cfg)) ub++; }
+    if (ub <= 1) return { key: 'amanha', label: 'Próximo dia útil', ord: 3, d };
+    if (ub <= 3) return { key: 'semana', label: 'Em até 3 dias úteis', ord: 4, d };
+    return { key: 'depois', label: 'Mais adiante', ord: 5, d };
+  }
+  function faixaExtra(item, hoje) {
+    const v = fromISO(item.vencimento); if (!v) return 'sem';
+    const d = diffDays(hoje, v);
+    if (d < 0) return 'vencidos';
+    if (d <= 30) return 'vincendos';
+    return 'mais30';
+  }
+
+  /* ---------- Leitor da caixa do PJe/MPPB ---------- */
+  function parseCaixa(txt) {
+    const out = [];
+    const text = (txt || '').replace(/\r/g, '');
+    const parts = text.split(/(?=Expediente\s*\(\d+\))/);
+    for (const raw of parts) {
+      const idm = /Expediente\s*\((\d+)\)/.exec(raw); if (!idm) continue;
+      const g = re => { const m = re.exec(raw); return m ? m[1].trim() : ''; };
+      const exp = /Expedi[çc][ãa]o eletr[ôo]nica\s*\((\d{2}\/\d{2}\/\d{4})(?:\s+(\d{2}:\d{2}))?/.exec(raw);
+      const lim = g(/Data limite prevista para ci[êe]ncia:\s*(\d{2}\/\d{2}\/\d{4})/);
+      const prazo = g(/Prazo:\s*(\d+)/);
+      const cReg = g(/registrou ci[êe]ncia em\s*(\d{2}\/\d{2}\/\d{4})/);
+      const manif = g(/Data limite prevista para manifesta[çc][ãa]o:\s*(\d{2}\/\d{2}\/\d{4})/);
+      const numOrigem = g(/N[ºo°]\s*Origem:\s*([\d.\-]+)/);
+      const processo = g(/Processo:\s*([\d.]+)/);
+      const lines = raw.split('\n').map(s => s.replace(/\t+/g, '\t').trim()).filter(Boolean);
+      const iProc = lines.findIndex(l => /^Processo:/.test(l));
+      const classe = iProc >= 0 && lines[iProc + 1] ? lines[iProc + 1] : '';
+      const vara = iProc >= 0 && lines[iProc + 2] ? lines[iProc + 2] : '';
+      const iFim = lines.findIndex(l => /^(PROMOTORIA|GAECO|Concl\.)/.test(l));
+      const zona = iProc >= 0 ? lines.slice(iProc + 2, iFim > iProc ? iFim : undefined) : [];
+      const partesLine = zona.find(l => / X /.test(l)) || zona.find(l => /\tAguard\./.test(l) && !/^\s*apoIA/i.test(l) && !/^Juiz/.test(l)) || '';
+      const partes = partesLine.split('\t')[0].replace(/\s*Aguard\..*$/, '').trim();
+      const situacao = Array.from(raw.matchAll(/Aguard\.\s*([A-Za-zÀ-ú]+)/g)).map(m => 'Aguard. ' + m[1]);
+      const iMarc = lines.findIndex(l => /^Marcar\/Desmarcar/.test(l));
+      const iOrig = lines.findIndex(l => /^N[ºo°]\s*Origem/.test(l));
+      const tags = iMarc >= 0 && iOrig > iMarc ? lines.slice(iMarc + 1, iOrig).filter(l => l.length < 40 && !/:/.test(l)) : [];
+      const concl = /Concl\.:\s*(.+?)\s*\((\d{2}\/\d{2}\/\d{4})/.exec(raw);
+      const dist = /Dist\.:\s*(.+?)\s*\((\d{2}\/\d{2}\/\d{4})/.exec(raw);
+      const flags = [];
+      const cab = (lines[0] || '') + ' ' + (lines.find(l => /PRIORIT/i.test(l)) || '');
+      [[/R[ÉE]U PRESO/i, 'Réu preso'], [/SIGILO\s+M[ÉE]DIO/i, 'Sigilo médio'], [/SIGILO\s+ALTO/i, 'Sigilo alto'], [/SEGREDO DE JUSTI/i, 'Segredo de justiça'],
+       [/IDOSO/i, 'Idoso'], [/INF[ÂA]NCIA E JUVENTUDE/i, 'Infância e juventude'], [/PRIORIT[ÁA]RIO/i, 'Prioritário'], [/DOEN[ÇC]A GRAVE/i, 'Doença grave'],
+       [/CRIME HEDIONDO/i, 'Crime hediondo'], [/VIOL[ÊE]NCIA DOM[ÉE]STICA/i, 'Violência doméstica']].forEach(([r, n]) => { if (r.test(cab)) flags.push(n); });
+      const toISO = s => { const d = fromBR(s); return d ? iso(d) : null; };
+      out.push({
+        expediente: idm[1], processo, numOrigem, classe: classe.replace(/^\s+/, ''), vara, partes, situacao, tags, flags,
+        expedicao: exp ? toISO(exp[1]) : null, expedicaoHora: exp && exp[2] ? exp[2] : '',
+        limiteCiencia: toISO(lim), prazoDias: prazo ? +prazo : null, cienciaReal: toISO(cReg), limiteManifestacao: toISO(manif),
+        conclusao: concl ? toISO(concl[2]) : null, conclusor: concl ? concl[1] : '',
+        distribuicao: dist ? toISO(dist[2]) : null, distribuidor: dist ? dist[1] : ''
+      });
+    }
+    return out;
+  }
+  /* Área: cível (inclui improbidade, infância protetiva, família, saúde) x penal. */
+  const PENAL_CLASSE = /inqu[ée]rito policial|a[çc][ãa]o penal|pris[ãa]o|flagrante|liberdade provis|termo circunstanciado|medidas protetivas de urg|habeas corpus|execu[çc][ãa]o (penal|da pena)|quebra de sigilo|restitui[çc][ãa]o de coisas|busca e apreens[ãa]o criminal|acordo de n[ãa]o persecu|insanidade mental|j[úu]ri|medidas cautelares|representa[çc][ãa]o criminal|not[íi]cia.crime|queixa.crime|revoga[çc][ãa]o da pris|relaxamento|carta precat[óo]ria criminal|intercepta[çc][ãa]o/i;
+  const PENAL_ASSUNTO = /\bcrimes?\b|homic[íi]dio|estupro|furto|roubo|tr[áa]fico|amea[çc]a|les[ãa]o corporal|estelionato|recepta[çc][ãa]o|porte ilegal|contraven[çc][ãa]o|feminic|adultera[çc][ãa]o de sinal|maria da penha/i;
+  function classificaArea(x) {
+    const cl = (x.classe || '').split(' - ')[0], as = (x.classe || '').split(' - ').slice(1).join(' - '), vr = (x.vara || '') + ' ' + (x.juizo || '');
+    if (PENAL_CLASSE.test(cl)) return { area: 'penal', motivo: cl.replace(/\s*\(\d+\)/, '') };
+    if (/garantias/i.test(vr)) return { area: 'penal', motivo: 'Vara das Garantias' };
+    if (/ato infracional/i.test(x.classe || '')) return { area: 'duvida', motivo: 'Ato infracional' };
+    if (PENAL_ASSUNTO.test(as) && !/improbidade|civil p[úu]blica|alimentos|prote[çc][ãa]o/i.test(cl)) return { area: 'penal', motivo: as };
+    return { area: 'civel', motivo: cl.replace(/\s*\(\d+\)/, '') };
+  }
+  /* Dígito antes do hífen no número CNJ (judicial) e último dígito (extrajudicial). */
+  const digitoJudicial = num => { const m = /(\d)-/.exec(num || ''); return m ? +m[1] : null; };
+  const ultimoDigito = num => { const m = /(\d)\D*$/.exec(num || ''); return m ? +m[1] : null; };
+
+  /* ---------- Leitor da agenda (PDF) ---------- */
+  function parseAgenda(text) {
+    const t = (text || '').replace(/\r/g, '').replace(/[ \t]+/g, ' ');
+    const re = /\b(\d{3}\.\d{4}\.\d{6})\b/g;
+    const hits = []; let m;
+    while ((m = re.exec(t))) hits.push({ num: m[1], at: m.index, end: re.lastIndex });
+    const out = [];
+    let section = /encerramento/i.test(hits.length ? t.slice(0, hits[0].at) : '') ? 'legal' : '';
+    let grupo = (/(\d{2}\/\d{2}\/\d{4})(?!\s*\d{2}:\d{2})/.exec(hits.length ? t.slice(0, hits[0].at) : '') || [])[1] || '';
+    for (let i = 0; i < hits.length; i++) {
+      const body = t.slice(hits[i].end, i + 1 < hits.length ? hits[i + 1].at : t.length);
+      const dts = Array.from(body.matchAll(/(\d{2}\/\d{2}\/\d{4})\s+(\d{2}:\d{2})/g));
+      const head = dts.length ? body.slice(0, dts[0].index) : body;
+      const tail = dts.length >= 2 ? body.slice(dts[1].index + dts[1][0].length) : '';
+      const dm = /(\d+º\s*Promotor de Justi[çc]a[\s\S]*?Guarabira|\d+º\s*Conselheiro do CSMP|Promotor Eleitoral[\s\S]*?Zona Eleitoral)/.exec(head);
+      const distrib = dm ? dm[1].replace(/\s+/g, ' ').trim() : '';
+      const hd0 = dm ? head.slice(0, dm.index) : head;
+      const interessados = (hd0.includes('•') ? hd0.replace(/\n/g, ' ').split('•') : hd0.split('\n')).map(s => s.replace(/\s+/g, ' ').trim()).filter(Boolean).filter(s => !/^Sem interessados$/i.test(s));
+      out.push({
+        processo: hits[i].num, interessados, distribuido: distrib, secao: section, grupo,
+        inicio: dts[0] ? iso(fromBR(dts[0][1])) : null, vencimento: dts[1] ? iso(fromBR(dts[1][1])) : (dts[0] ? iso(fromBR(dts[0][1])) : null)
+      });
+      const hd = /(\d{2}\/\d{2}\/\d{4})(?!\s*\d{2}:\d{2})([\s\S]*)$/.exec(tail);
+      if (hd) { grupo = hd[1]; section = /encerramento/i.test(hd[2]) ? 'legal' : hd[2].replace(/\s+/g, ' ').trim().slice(0, 80); }
+    }
+    return out;
+  }
+
+  /* Reconstrói a agenda a partir das posições do pdf.js: pages = [[{str,x,y}], ...] */
+  function agendaDePosicoes(pages, GAP) {
+    GAP = GAP || 26;
+    const RX = /^\d{3}\.\d{4}\.\d{6}$/;
+    let cols = null; const out = [];
+    for (const items0 of pages) {
+      const items = items0.filter(i => i.str && i.str.trim());
+      const hI = items.find(i => /^Interessados$/i.test(i.str.trim())), hD = items.find(i => /^Distribu[íi]do/i.test(i.str.trim())), hP = items.find(i => /^Per[íi]odo$/i.test(i.str.trim()));
+      const hN = items.find(i => /^N[ºo°]\s*Processo$/i.test(i.str.trim()));
+      const procs = items.filter(i => RX.test(i.str.trim()));
+      if (hI && hD && hP) { const x0 = procs.length ? Math.min(...procs.map(q => q.x)) : (hN ? hN.x - 9 : hI.x - 140); cols = { c2: x0 + 85, c3: (hI.x + hD.x) / 2, c4: (hD.x + hP.x) / 2 }; }
+      if (!cols && procs.length) { const x0 = Math.min(...procs.map(p => p.x)); cols = { c2: x0 + 85, c3: x0 + 227, c4: x0 + 384 }; }
+      if (!cols) continue;
+      const tabela = items.filter(i => !RX.test(i.str.trim()));
+      const heads = tabela.filter(i => i.x < cols.c2 && !(hI && i.y >= hI.y - 2));
+      const cells = tabela.filter(i => i.x >= cols.c2 && !(hI && i.y >= hI.y - 2));
+      const blocos = procs.map(p => ({ p, c2: [], c3: [], c4: [] }));
+      const pertoDe = (y, lim) => { let best = null, bd = 1e9;
+        for (const b of blocos) { const d = Math.abs(b.p.y - y); if (d >= bd) continue; const lo = Math.min(b.p.y, y), hi = Math.max(b.p.y, y);
+          if (heads.some(h => h.y > lo + 1 && h.y < hi - 1)) continue; best = b; bd = d; }
+        return bd <= lim ? best : null; };
+      /* Interessados: agrupa linhas contíguas e atribui o grupo inteiro pelo centro. */
+      const c2 = cells.filter(c => c.x < cols.c3).sort((a, b) => b.y - a.y); const grupos = [];
+      for (const c of c2) { const g = grupos[grupos.length - 1]; const ult = g && g[g.length - 1];
+        if (g && ult.y - c.y <= GAP && !heads.some(h => h.y < ult.y - 1 && h.y > c.y + 1)) g.push(c); else grupos.push([c]); }
+      for (const g of grupos) { const cy = (g[0].y + g[g.length - 1].y) / 2; const b = pertoDe(cy, 60); if (b) b.c2.push(...g); }
+      for (const c of cells.filter(c => c.x >= cols.c3)) {
+        let best = null, bd = 1e9;
+        for (const b of blocos) {
+          const d = Math.abs(b.p.y - c.y); if (d >= bd) continue;
+          const lo = Math.min(b.p.y, c.y), hi = Math.max(b.p.y, c.y);
+          if (heads.some(h => h.y > lo + 1 && h.y < hi - 1)) continue;
+          best = b; bd = d;
+        }
+        if (!best || bd > 40) continue;
+        (c.x >= cols.c4 ? best.c4 : best.c3).push(c);
+      }
+      const seq = heads.map(h => ({ y: h.y, t: h.str.trim() })).concat(blocos.map(b => {
+        const lin = arr => { const m = new Map(); arr.forEach(i => { const k = Math.round(i.y); (m.get(k) || m.set(k, []).get(k)).push(i); }); return [...m.entries()].sort((a, b) => b[0] - a[0]).map(([, r]) => r.sort((a, b) => a.x - b.x).map(i => i.str.trim()).join(' ')); };
+        return { y: b.p.y, t: b.p.str.trim() + '\n' + lin(b.c2).join('\n') + '\n' + lin(b.c3).join(' ') + '\n' + lin(b.c4).join(' ') };
+      }));
+      seq.sort((a, b) => b.y - a.y).forEach(s => out.push(s.t));
+    }
+    return out.join('\n');
+  }
+  function filtraAgenda(lista, cfg) {
+    const cargo = (cfg.cargoGuarabira || '4º Promotor').toLowerCase();
+    const par = (cfg.paridade || 'par') === 'par';
+    return lista.filter(x => x.secao === 'legal' && x.distribuido.toLowerCase().includes(cargo) && (ultimoDigito(x.processo) % 2 === 0) === par);
+  }
+
+  const api = { iso, fromBR, fromISO, br, addDays, diffDays, isBusiness, addBusiness, prazoFinal, metaInterna, recompute, urgencia, faixaExtra, parseCaixa, parseAgenda, agendaDePosicoes, classificaArea, filtraAgenda, digitoJudicial, ultimoDigito, holidaysFor };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.Prazos = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script src="https://accounts.google.com/gsi/client" async></script>
+<script>
+/* Mesa de Prazos — backup local e sincronização com o Google Drive (versão GitHub Pages). */
+(function () {
+  const ARQ = 'mesa-de-prazos.json';
+  const SCOPE = 'https://www.googleapis.com/auth/drive.file';
+  const ls = {
+    get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} }
+  };
+  const D = { clientId: ls.get('mp_drive_client') || '', token: null, exp: 0, fileId: ls.get('mp_drive_file') || '', estado: 'desligado', ultimo: ls.get('mp_drive_ultimo') || '', erro: '', timer: null, pendente: null, tc: null };
+  const $ = s => document.querySelector(s);
+  const toast = m => { const t = $('#toast'); if (!t) return; t.textContent = m; t.hidden = false; clearTimeout(toast._t); toast._t = setTimeout(() => t.hidden = true, 2800); };
+
+  function status() {
+    const el = $('#status'); if (!el) return;
+    const quando = D.ultimo ? new Date(D.ultimo).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '';
+    const txt = {
+      desligado: 'Salvo automaticamente neste navegador. Conecte o Google Drive em Ajustes para ter cópia na nuvem.',
+      conectando: 'Conectando ao Google Drive…',
+      ok: `Salvo neste navegador e no Google Drive${quando ? ' (última cópia ' + quando + ')' : ''}.`,
+      enviando: 'Salvando no Google Drive…',
+      expirado: 'Salvo neste navegador. A conexão com o Drive expirou: clique em "Sincronizar agora" em Ajustes.',
+      erro: 'Salvo neste navegador, mas o Drive recusou a cópia (' + D.erro + '). Veja Ajustes.'
+    }[D.estado];
+    el.innerHTML = txt + (D.estado === 'expirado' || D.estado === 'erro' ? ' <button class="btn sm" data-drive-sync>Sincronizar agora</button>' : '');
+  }
+  function gisPronto() { return window.google && google.accounts && google.accounts.oauth2; }
+
+  function pedirToken(prompt) {
+    return new Promise((res, rej) => {
+      if (!D.clientId) return rej(new Error('informe o Client ID'));
+      if (!gisPronto()) return rej(new Error('biblioteca do Google não carregou'));
+      D.tc = google.accounts.oauth2.initTokenClient({
+        client_id: D.clientId, scope: SCOPE,
+        callback: r => { if (r.error) return rej(new Error(r.error)); D.token = r.access_token; D.exp = Date.now() + (r.expires_in - 60) * 1000; ls.set('mp_drive_ligado', '1'); res(); },
+        error_callback: e => rej(new Error(e && e.type || 'janela fechada'))
+      });
+      D.tc.requestAccessToken({ prompt: prompt == null ? '' : prompt });
+    });
+  }
+  async function api(url, opt) {
+    opt = opt || {}; opt.headers = Object.assign({ Authorization: 'Bearer ' + D.token }, opt.headers || {});
+    const r = await fetch(url, opt);
+    if (r.status === 401) { D.token = null; throw Object.assign(new Error('sessão expirada'), { expirado: true }); }
+    if (r.status === 404 && /files\//.test(url)) { D.fileId = ''; ls.set('mp_drive_file', ''); throw Object.assign(new Error('arquivo não encontrado'), { sumiu: true }); }
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r;
+  }
+  async function acharArquivo() {
+    if (D.fileId) return D.fileId;
+    const q = encodeURIComponent(`name='${ARQ}' and trashed=false`);
+    const r = await api(`https://www.googleapis.com/drive/v3/files?q=${q}&spaces=drive&fields=files(id,modifiedTime)&orderBy=modifiedTime desc`);
+    const j = await r.json();
+    if (j.files && j.files[0]) { D.fileId = j.files[0].id; ls.set('mp_drive_file', D.fileId); }
+    return D.fileId;
+  }
+  async function baixar() {
+    const id = await acharArquivo(); if (!id) return null;
+    const r = await api(`https://www.googleapis.com/drive/v3/files/${id}?alt=media`);
+    return r.json();
+  }
+  async function enviar(snap) {
+    const corpo = JSON.stringify(snap);
+    let id = await acharArquivo();
+    if (id) {
+      await api(`https://www.googleapis.com/upload/drive/v3/files/${id}?uploadType=media`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: corpo });
+    } else {
+      const b = 'mp' + Date.now();
+      const multi = `--${b}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify({ name: ARQ, mimeType: 'application/json' })}\r\n--${b}\r\nContent-Type: application/json\r\n\r\n${corpo}\r\n--${b}--`;
+      const r = await api('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', { method: 'POST', headers: { 'Content-Type': 'multipart/related; boundary=' + b }, body: multi });
+      D.fileId = (await r.json()).id; ls.set('mp_drive_file', D.fileId);
+    }
+    D.ultimo = new Date().toISOString(); ls.set('mp_drive_ultimo', D.ultimo);
+  }
+  async function comToken(fn) {
+    if (!D.token || Date.now() > D.exp) await pedirToken('');
+    try { return await fn(); }
+    catch (e) { if (e.expirado) { await pedirToken(''); return fn(); } if (e.sumiu) return fn(); throw e; }
+  }
+  /* Primeira sincronização: o mais recente vence. */
+  async function sincronizar(interativo) {
+    D.estado = 'conectando'; status();
+    try {
+      if (interativo || !D.token) await pedirToken(interativo ? (ls.get('mp_drive_ligado') ? '' : 'consent') : '');
+      const remoto = await comToken(baixar);
+      const local = window.MesaApp.snapshot();
+      if (remoto && remoto.itens && remoto.salvoEm && remoto.salvoEm > (ls.get('mp_local_editado') || '')) {
+        window.MesaApp.aplicar(remoto, false); ls.set('mp_local_editado', remoto.salvoEm);
+        toast('Dados do Drive carregados');
+      } else {
+        await comToken(() => enviar(local));
+        toast('Cópia salva no Google Drive');
+      }
+      D.estado = 'ok';
+    } catch (e) { D.erro = e.message; D.estado = /expir|interaction|popup|janela/i.test(e.message) ? 'expirado' : 'erro'; }
+    status(); window.MesaApp.render();
+  }
+  function agendarEnvio(snap) {
+    D.pendente = snap; clearTimeout(D.timer);
+    D.timer = setTimeout(async () => {
+      if (!D.token || D.estado === 'desligado') return;
+      D.estado = 'enviando'; status();
+      try { await comToken(() => enviar(D.pendente)); D.estado = 'ok'; }
+      catch (e) { D.erro = e.message; D.estado = /expir|interaction|popup|janela/i.test(e.message) ? 'expirado' : 'erro'; }
+      status();
+    }, 1500);
+  }
+  function baixarArquivo(nome, texto) {
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([texto], { type: 'application/json' })); a.download = nome;
+    document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  }
+
+  window.MesaHooks = {
+    onSave(snap) { ls.set('mp_local_editado', snap.salvoEm); if (D.token) agendarEnvio(snap); },
+    ready() {
+      status();
+      if (D.clientId && ls.get('mp_drive_ligado')) {
+        const tenta = () => gisPronto() ? sincronizar(false) : setTimeout(tenta, 400);
+        tenta();
+      }
+    },
+    ajustesHtml() {
+      const esc = s => String(s || '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+      return `<section class="panel cfg"><h2>Backup e Google Drive</h2>
+        <p class="small muted" style="margin:0">Tudo é salvo automaticamente neste navegador. Com o Drive conectado, cada alteração também vai para o arquivo <b>${ARQ}</b> no seu Drive, e ao abrir a mesa em outro aparelho o mais recente é carregado.</p>
+        <div class="f"><span class="lbl">Client ID do Google (veja o README)</span><input id="drive_client" value="${esc(D.clientId)}" placeholder="0000000000-xxxx.apps.googleusercontent.com" style="width:100%"></div>
+        <div class="row"><button class="btn pri" data-drive-connect>${D.token ? 'Sincronizar agora' : 'Conectar ao Google Drive'}</button>
+          ${D.token ? '<button class="btn" data-drive-off>Desconectar</button>' : ''}
+          <span class="small muted">${D.estado === 'ok' ? 'Conectado' + (D.ultimo ? ' · última cópia ' + new Date(D.ultimo).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '') : D.estado === 'erro' ? 'Erro: ' + esc(D.erro) : ''}</span></div>
+        <div class="row"><button class="btn" data-backup-export>Baixar backup (.json)</button>
+          <label class="btn" style="cursor:pointer">Restaurar backup<input type="file" accept="application/json,.json" data-backup-import hidden></label></div></section>`;
+    }
+  };
+
+  document.addEventListener('click', e => {
+    const t = e.target.closest('button'); if (!t) return;
+    if (t.hasAttribute('data-drive-connect') || t.hasAttribute('data-drive-sync')) {
+      const inp = document.getElementById('drive_client');
+      if (inp) { D.clientId = inp.value.trim(); ls.set('mp_drive_client', D.clientId); }
+      if (!D.clientId) { toast('Cole o Client ID do Google antes (passo a passo no README)'); return; }
+      sincronizar(true);
+    }
+    if (t.hasAttribute('data-drive-off')) {
+      if (D.token && gisPronto()) google.accounts.oauth2.revoke(D.token, () => {});
+      D.token = null; D.estado = 'desligado'; ls.set('mp_drive_ligado', ''); status(); window.MesaApp.render(); toast('Drive desconectado; o backup local continua');
+    }
+    if (t.hasAttribute('data-backup-export')) {
+      const s = window.MesaApp.snapshot(); baixarArquivo('mesa-de-prazos-' + s.salvoEm.slice(0, 10) + '.json', JSON.stringify(s, null, 1)); toast('Backup baixado');
+    }
+  });
+  document.addEventListener('change', async e => {
+    const t = e.target; if (!t.hasAttribute || !t.hasAttribute('data-backup-import') || !t.files[0]) return;
+    try { const j = JSON.parse(await t.files[0].text()); window.MesaApp.aplicar(j, true); toast('Backup restaurado'); }
+    catch (err) { toast('Não consegui restaurar: ' + err.message); }
+    t.value = '';
+  });
+  /* Ao voltar para a aba, busca alterações feitas em outro aparelho. */
+  document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState !== 'visible' || !D.token || Date.now() > D.exp) return;
+    try {
+      const r = await baixar(); const loc = ls.get('mp_local_editado') || '';
+      if (r && r.salvoEm && r.salvoEm > loc) { window.MesaApp.aplicar(r, false); ls.set('mp_local_editado', r.salvoEm); toast('Atualizado com o que você fez em outro aparelho'); }
+    } catch (e) {}
+  });
+})();
+
+</script>
+<script>
+(function(){
+const P = window.Prazos;
+const PROMS = {
+  gaeco:{nome:'GAECO', drive:'https://drive.google.com/drive/u/0/folders/1BVs-9UFGDenufzoUuZ8Zc-TBPn_lrWUB',
+    fluxo:[['prazos','Ver prazos'],['analise','Análise prévia de processos (evitar surpresas)']]},
+  caapora:{nome:'Caaporã', drive:'https://drive.google.com/drive/u/0/folders/1gZ-y614OwYkWQBiVGXvRjsKaLseRY_cT',
+    fluxo:[['judiciais','Prazos judiciais'],['seeu','SEEU: baixar processos e atestado de pena (peça com o Neto)']]},
+  guarabira:{nome:'Guarabira', drive:'https://drive.google.com/drive/u/0/folders/1L9pLI35aWBcYdcrJS6fYrrxX9SATH-qo',
+    fluxo:[['judiciais','Prazos judiciais (dígito par antes do hífen)'],['vencidos','Extrajudiciais vencidos'],['vincendos','Extrajudiciais vincendos (até 30 dias)'],['mais30','Extrajudiciais com mais de 30 dias']]}
+};
+const DEFAULT_CFG = {
+  promotorias:{
+    gaeco:{contagem:'corridos', meta:'aposCiencia', metaDias:3, dobro:false},
+    caapora:{contagem:'uteis', meta:'ciencia', metaDias:1, dobro:false, soCivel:true, conclusor:'JOSE OLIVEIRA', conclusorAte:'2026-10-31'},
+    guarabira:{contagem:'uteis', meta:'prazo', metaDias:1, dobro:false}
+  },
+  feriadosExtras:['30/10/2026','08/12/2026'], recessoUteis:true,
+  cargoGuarabira:'4º Promotor', paridade:'par', leituras:{}
+};
+const $ = s => document.querySelector(s);
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const today = () => P.fromISO(P.iso(new Date()));
+const state = { itens:new Map(), cfg:JSON.parse(JSON.stringify(DEFAULT_CFG)), check:{}, tab:'hoje', sub:{guarabira:'judiciais', extra:'vencidos'}, mode:'local', drafts:{}, notas:new Map(), armed:null, timer:{used:{gaeco:0,caapora:0,guarabira:0}, running:null, gaecoFechado:false}, alerted:{} };
+const BUDGET={gaeco:4*36e5, caapora:36e5, guarabira:36e5}; const JORNADA=6*36e5;
+try{ const t = localStorage.getItem('mp_tab'); if(t) state.tab = t; }catch(e){}
+
+/* ---------- armazenamento: banco do artefato, com cópia local de reserva ---------- */
+let db = null;
+const store = {
+  async putItem(it){ state.itens.set(it.id,it); if(db){ await db.doc('itens/'+it.id).set(clean(it)); } else saveLocal(); },
+  async delItem(id){ state.itens.delete(id); if(db){ await db.doc('itens/'+id).delete(); } else saveLocal(); },
+  async putCfg(){ if(db){ await db.doc('config/main').set(clean(state.cfg)); } else saveLocal(); },
+  async putNota(n){ state.notas.set(n.id,n); if(db){ await db.doc('lembretes/'+n.id).set(clean(n)); } else saveLocal(); },
+  async delNota(id){ state.notas.delete(id); if(db){ await db.doc('lembretes/'+id).delete(); } else saveLocal(); },
+  async putTimer(){ if(db){ await db.doc('timer/'+P.iso(today())).set(Object.assign({data:P.iso(today())}, clean(state.timer))); } else saveLocal(); },
+  async putCheck(){ const k=P.iso(today()); if(db){ await db.doc('checklist/'+k).set(Object.assign({data:k},state.check)); } else saveLocal(); }
+};
+function clean(o){ return JSON.parse(JSON.stringify(o)); }
+function snapshot(){
+  let prev={}; try{ prev = JSON.parse(localStorage.getItem('mp_local')||'{}')||{}; }catch(e){}
+  const k=P.iso(today());
+  return {app:'mesa-de-prazos', versao:2, salvoEm:new Date().toISOString(), itens:[...state.itens.values()].map(clean), notas:[...state.notas.values()], cfg:state.cfg,
+    check:Object.assign({}, prev.check||{}, {[k]:state.check}), timer:Object.assign({}, prev.timer||{}, {[k]:state.timer})};
+}
+function saveLocal(){ const s=snapshot(); try{ localStorage.setItem('mp_local', JSON.stringify(s)); }catch(e){} if(window.MesaHooks && MesaHooks.onSave) MesaHooks.onSave(s); }
+function applySnapshot(j){
+  if(!j || !Array.isArray(j.itens)) throw new Error('arquivo não é um backup da Mesa de Prazos');
+  state.cfg = mergeCfg(j.cfg); state.itens = new Map(); state.notas = new Map();
+  j.itens.forEach(i=>state.itens.set(i.id, calc(Object.assign({},i)))); (j.notas||[]).forEach(n=>state.notas.set(n.id,n));
+  state.check = (j.check||{})[P.iso(today())]||{}; const tm=(j.timer||{})[P.iso(today())];
+  state.timer = tm ? {used:Object.assign({gaeco:0,caapora:0,guarabira:0},tm.used||{}), running:tm.running||null, gaecoFechado:!!tm.gaecoFechado} : {used:{gaeco:0,caapora:0,guarabira:0}, running:null, gaecoFechado:false};
+}
+window.MesaApp = { snapshot, aplicar(j, salvar){ applySnapshot(j); try{ localStorage.setItem('mp_local', JSON.stringify(Object.assign({}, j))); }catch(e){} if(salvar) saveLocal(); render(); }, render:()=>render() };
+function loadLocal(){ try{ const j = JSON.parse(localStorage.getItem('mp_local')||'null'); if(j) applySnapshot(j); }catch(e){} }
+function mergeCfg(c){ const d = JSON.parse(JSON.stringify(DEFAULT_CFG)); const out = Object.assign(d, c||{}); out.promotorias = Object.assign({}, DEFAULT_CFG.promotorias); for(const k in DEFAULT_CFG.promotorias) out.promotorias[k] = Object.assign({}, DEFAULT_CFG.promotorias[k], (c&&c.promotorias&&c.promotorias[k])||{}); out.leituras = (c&&c.leituras)||{}; return out; }
+function cfgCalc(){ const c = clean(state.cfg); c._hoje = P.iso(today()); return c; }
+function calc(it){ const c = cfgCalc(); const it2 = Object.assign({}, it); if(it2.tipo!=='extra' && it2.prazoDiasOrig!=null){ const dob = c.promotorias[it2.prom] && c.promotorias[it2.prom].dobro; it2.prazoDias = it2.prazoDiasOrig*(dob?2:1); } P.recompute(it2,c); it.prazoFinal = it2.prazoFinal; it.meta = it2.meta; it.prazoDias = it2.prazoDias; return it; }
+
+async function boot(){
+  loadLocal(); render();
+  let api = null; try{ api = !window.MesaHooks && window.claude && await window.claude.use('db'); }catch(e){}
+  if(!api){ state.mode='local'; $('#status').textContent = window.MesaHooks ? 'Salvo automaticamente neste navegador.' : 'Salvando só neste navegador (banco do artefato indisponível nesta visualização).'; render(); if(window.MesaHooks && MesaHooks.ready) MesaHooks.ready(); return; }
+  db = api; state.mode = 'db'; state.itens.clear();
+  $('#status').textContent = 'Tudo salvo na nuvem do artefato (expedientes, lembretes e checklist) — abre igual no computador e no celular e alimenta o resumo por e-mail.';
+  db.doc('config/main').onSnapshot(s=>{ state.cfg = mergeCfg(s.exists ? s.data() : null); state.itens.forEach(calc); render(); }, onErr);
+  db.collection('itens').onSnapshot(s=>{ state.itens = new Map(s.docs.map(d=>[d.id, calc(Object.assign({}, d.data()))])); render(); }, onErr);
+  db.doc('timer/'+P.iso(today())).onSnapshot(s=>{ if(s.exists){ const d=s.data(); state.timer={used:Object.assign({gaeco:0,caapora:0,guarabira:0},d.used||{}), running:d.running||null, gaecoFechado:!!d.gaecoFechado}; } renderJornada(); }, onErr);
+  db.collection('lembretes').onSnapshot(s=>{ state.notas = new Map(s.docs.map(d=>[d.id, Object.assign({}, d.data())])); render(); }, onErr);
+  db.doc('checklist/'+P.iso(today())).onSnapshot(s=>{ state.check = s.exists ? Object.assign({}, s.data()) : {}; render(); }, onErr);
+}
+function onErr(e){ $('#status').textContent = 'Não foi possível sincronizar ('+(e&&e.code||'erro')+'). Recarregue a página.'; }
+
+/* ---------- utilidades de exibição ---------- */
+let toastT; function toast(m){ const t=$('#toast'); t.textContent=m; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true,2600); }
+const brI = s => s ? P.br(P.fromISO(s)) : '—';
+const dow = s => s ? ['dom','seg','ter','qua','qui','sex','sáb'][P.fromISO(s).getDay()] : '';
+function rel(s){ if(!s) return ''; const d = P.diffDays(today(), P.fromISO(s)); if(d===0) return 'hoje'; if(d===1) return 'amanhã'; if(d===-1) return 'ontem'; return d>0 ? 'em '+d+' dias' : 'há '+(-d)+' dias'; }
+const pend = p => [...state.itens.values()].filter(i=>i.prom===p && i.status!=='feito');
+const feitos = p => [...state.itens.values()].filter(i=>i.prom===p && i.status==='feito');
+function pct(p){ const all=[...state.itens.values()].filter(i=>i.prom===p); if(!all.length) return 0; const s = all.reduce((a,i)=>a+(i.status==='feito'?100:(i.progresso||0)),0); return Math.round(s/all.length); }
+const urg = it => P.urgencia(it, today(), cfgCalc());
+const URG_CHIP = {vencido:'danger',atrasado:'danger',hoje:'warn',amanha:'warn',semana:'info',depois:'',sem:''};
+function adiantar(){ return [...state.itens.values()].filter(i=>i.status!=='feito').map(i=>[i,urg(i)]).filter(([,u])=>u.ord<=3).sort((a,b)=>a[1].ord-b[1].ord || (a[0].meta||'').localeCompare(b[0].meta||'')); }
+
+/* ---------- render ---------- */
+function render(){
+  const t = today();
+  $('#hoje-txt').textContent = t.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}) + (P.isBusiness(t,cfgCalc()) ? '' : ' · dia não útil');
+  const h = new Date().getHours(); $('#greet').textContent = (h<12?'Bom dia':h<18?'Boa tarde':'Boa noite')+', José';
+  $('#dayboard').innerHTML = dayboard(); renderJornada();
+  const ad = adiantar(); const venc = ad.filter(([,u])=>u.ord<=1).length;
+  $('#sum').innerHTML = (venc?`<span class="chip danger">${venc} atrasado${venc>1?'s':''}</span>`:'') + `<span class="chip warn">${ad.length-venc} para adiantar agora</span>` + (()=>{const n=[...state.itens.values()].filter(i=>i.status==='feito').length; return `<span class="chip ok">${n} feito${n===1?'':'s'}</span>`;})();
+  const tabs = [['hoje','Hoje',null,ad.length],['gaeco','GAECO','gaeco',pend('gaeco').length],['caapora','Caaporã','caapora',pend('caapora').length],['guarabira','Guarabira','guarabira',pend('guarabira').length],['feitos','Feitos',null,null],['ajustes','Ajustes',null,null]];
+  $('#tabs').innerHTML = tabs.map(([k,n,d,c])=>`<button class="tab" role="tab" data-tab="${k}" aria-selected="${state.tab===k}">${d?`<span class="dot ${d}"></span>`:''}${n}${c!=null?`<span class="n">${c}</span>`:''}</button>`).join('');
+  const v = $('#view');
+  const keep = {}; v.querySelectorAll('textarea[id],input[id^="no_"]').forEach(x=>keep[x.id]=x.value);
+  const open = new Set([...v.querySelectorAll('details[open][data-k]')].map(d=>d.dataset.k));
+  const ae=document.activeElement; const focusId = ae && ae.id && v.contains(ae) && /^(INPUT|TEXTAREA)$/.test(ae.tagName) ? ae.id : null; let sel=null; try{ sel = focusId ? ae.selectionStart : null; }catch(_){}
+  if(state.tab==='hoje') v.innerHTML = viewHoje();
+  else if(PROMS[state.tab]) v.innerHTML = viewProm(state.tab);
+  else if(state.tab==='feitos') v.innerHTML = viewFeitos();
+  else v.innerHTML = viewAjustes();
+  for(const k in keep){ const x=document.getElementById(k); if(x) x.value = keep[k]; }
+  if(focusId){ const x=document.getElementById(focusId); if(x){ x.focus(); try{ if(sel!=null) x.setSelectionRange(sel,sel); }catch(_){} } }
+  v.querySelectorAll('details[data-k]').forEach(d=>{ if(open.has(d.dataset.k)) d.open=true; });
+}
+function usedNow(p){ let u=state.timer.used[p]||0; const r=state.timer.running; if(r&&r.prom===p) u+=Math.max(0,Date.now()-r.since); return u; }
+function tCalc(){
+  const g=usedNow('gaeco'); const sobra = state.timer.gaecoFechado ? Math.max(0,BUDGET.gaeco-g) : 0;
+  const excesso = ['caapora','guarabira'].reduce((a,p)=>a+Math.max(0,usedNow(p)-BUDGET[p]),0);
+  const sobraLivre = sobra-excesso; const out={sobra, sobraLivre, total:['gaeco','caapora','guarabira'].reduce((a,p)=>a+usedNow(p),0)};
+  for(const p of ['gaeco','caapora','guarabira']){ const own=BUDGET[p]-usedNow(p);
+    out[p] = p==='gaeco' ? {left:state.timer.gaecoFechado?0:own, own} : {left: own>0 ? own : sobraLivre, own}; }
+  return out;
+}
+function fmt(ms){ const neg=ms<0; ms=Math.abs(Math.round(ms/1000)); const h=Math.floor(ms/3600), m=Math.floor(ms%3600/60), s=ms%60; return (neg?'+':'')+h+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0'); }
+const fmtHM = ms => { const m=Math.round(ms/6e4); return Math.floor(m/60)+'h'+String(m%60).padStart(2,'0'); };
+function renderJornada(){
+  const el=$('#jornada'); if(!el) return; const c=tCalc(); const r=state.timer.running;
+  el.innerHTML = `<div class="jh"><span class="lbl">Jornada de hoje</span><span class="tot" id="j-tot">${fmtHM(c.total)} de 6h</span><div class="bar"><i id="j-bar" style="width:${Math.min(100,c.total/JORNADA*100)}%"></i></div>
+    <span class="chip ${c.sobra?'ok':''}" id="j-sobra">${state.timer.gaecoFechado?'Sobra do GAECO: '+fmtHM(Math.max(0,c.sobraLivre))+' para Caaporã/Guarabira':'GAECO primeiro: a sobra libera ao terminar'}</span></div>
+    <div class="timers">${['gaeco','caapora','guarabira'].map(p=>{ const on=r&&r.prom===p; const fechado = p==='gaeco'&&state.timer.gaecoFechado;
+      return `<div class="tmr ${on?'on':''}" id="tm_${p}"><div class="top2"><span class="pt ${p}">${PROMS[p].nome} · ${BUDGET[p]/36e5}h</span><span class="small muted" id="ts_${p}"></span></div>
+        <div class="clock" id="tl_${p}">—</div><div class="bar"><i id="tb_${p}"></i></div>
+        <div class="row">${fechado?`<button class="btn sm" data-fechar-gaeco>Reabrir GAECO</button>`:`<button class="btn sm ${on?'':'pri'}" data-timer="${p}">${on?'Pausar':(usedNow(p)?'Retomar':'Iniciar')}</button>${p==='gaeco'?`<button class="btn sm" data-fechar-gaeco>Terminei o GAECO</button>`:''}`}</div></div>`; }).join('')}</div>`;
+  tick();
+}
+function beep(){ try{ const a=new (window.AudioContext||window.webkitAudioContext)(); [0,0.35,0.7].forEach(t=>{ const o=a.createOscillator(), g=a.createGain(); o.frequency.value=880; g.gain.setValueAtTime(0.0001,a.currentTime+t); g.gain.exponentialRampToValueAtTime(0.2,a.currentTime+t+0.02); g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+t+0.3); o.connect(g).connect(a.destination); o.start(a.currentTime+t); o.stop(a.currentTime+t+0.32); }); }catch(_){} }
+function tick(){
+  const c=tCalc(); const r=state.timer.running;
+  const tot=$('#j-tot'); if(tot){ tot.textContent=fmtHM(c.total)+' de 6h'; $('#j-bar').style.width=Math.min(100,c.total/JORNADA*100)+'%'; }
+  for(const p of ['gaeco','caapora','guarabira']){
+    const tl=document.getElementById('tl_'+p); if(!tl) continue; const x=c[p]; const card=document.getElementById('tm_'+p);
+    const fechado = p==='gaeco'&&state.timer.gaecoFechado;
+    tl.textContent = fechado ? 'feito ✓' : fmt(x.left);
+    const ts=document.getElementById('ts_'+p);
+    ts.textContent = fechado ? `usou ${fmtHM(usedNow(p))}` : x.left<0 ? 'além do tempo' : (p!=='gaeco' && x.own<=0 ? 'usando a sobra do GAECO' : (p!=='gaeco' && c.sobraLivre>0 ? 'restante + '+fmtHM(c.sobraLivre)+' de sobra' : 'restante'));
+    document.getElementById('tb_'+p).style.width = Math.min(100, usedNow(p)/BUDGET[p]*100)+'%';
+    card.classList.toggle('out', !fechado && x.left<0);
+    if(r && r.prom===p && x.left<=0 && !state.alerted[p]){ state.alerted[p]=true; beep(); toast(`Tempo de ${PROMS[p].nome} esgotado${p==='gaeco'?'':' (inclusive a sobra)'}. Hora de trocar de caixa.`); }
+  }
+  document.title = r ? `${fmt(c[r.prom].left)} · ${PROMS[r.prom].nome}` : 'Mesa de Prazos';
+}
+let diaAtual = P.iso(today());
+setInterval(()=>{ if(state.timer.running) tick(); if(P.iso(today())!==diaAtual){ diaAtual=P.iso(today()); if(db){ location.reload(); } else { loadLocal(); state.alerted={}; render(); } } }, 1000);
+async function toggleTimer(p){
+  const t=state.timer; const now=Date.now();
+  if(t.running){ t.used[t.running.prom]=(t.used[t.running.prom]||0)+(now-t.running.since); const was=t.running.prom; t.running=null; if(was===p){ renderJornada(); await store.putTimer(); toast(`${PROMS[p].nome} pausado`); return; } }
+  t.running={prom:p, since:now}; state.alerted[p]=false; renderJornada(); await store.putTimer(); toast(`Cronômetro de ${PROMS[p].nome} rodando`);
+}
+async function fecharGaeco(){
+  const t=state.timer; const now=Date.now();
+  if(t.running && t.running.prom==='gaeco'){ t.used.gaeco+=(now-t.running.since); t.running=null; }
+  t.gaecoFechado=!t.gaecoFechado; renderJornada(); await store.putTimer();
+  toast(t.gaecoFechado ? `GAECO encerrado. ${fmtHM(tCalc().sobra)} liberados para Caaporã e Guarabira` : 'GAECO reaberto');
+}
+function metaDia(){
+  const hoje = P.iso(today()); const all=[...state.itens.values()];
+  const feitosHoje = all.filter(i=>i.status==='feito' && i.feitoEm===hoje).length;
+  const devidos = all.filter(i=>i.status!=='feito' && i.meta && i.meta<=hoje).length;
+  return {feitos:feitosHoje, alvo:feitosHoje+devidos, devidos};
+}
+function dayboard(){
+  const m = metaDia(); const frac = m.alvo ? m.feitos/m.alvo : 1; const C = 2*Math.PI*40;
+  const all=[...state.itens.values()]; const dias=[]; for(let k=6;k>=0;k--){ const d=P.addDays(today(),-k); dias.push([P.iso(d), d]); }
+  const cont = dias.map(([s])=>all.filter(i=>i.status==='feito'&&i.feitoEm===s).length); const mx=Math.max(1,...cont);
+  const hint = !m.alvo ? 'Nenhuma meta vence hoje. Bom dia para adiantar a semana.' : m.devidos===0 ? 'Meta do dia cumprida. Se der, adiante o próximo dia útil.' : `Faltam ${m.devidos} para fechar o dia.`;
+  return `<div class="ring" role="img" aria-label="${m.feitos} de ${m.alvo} metas de hoje">
+      <svg viewBox="0 0 96 96"><circle cx="48" cy="48" r="40" fill="none" stroke="var(--line)" stroke-width="9"/><circle cx="48" cy="48" r="40" fill="none" stroke="${m.devidos===0?'var(--ok)':'var(--accent)'}" stroke-width="9" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-frac)}" style="transition:stroke-dashoffset .5s"/></svg>
+      <div class="c"><b>${m.feitos}/${m.alvo}</b><span>meta hoje</span></div></div>
+    <div class="week"><div class="lbl">Feitos na semana</div><div class="bars">${dias.map(([s,d],k)=>`<div class="${k===6?'t':''}" title="${cont[k]} em ${P.br(d)}"><i style="height:${Math.round(cont[k]/mx*40)+3}px"></i>${['D','S','T','Q','Q','S','S'][d.getDay()]}</div>`).join('')}</div><div class="hint">${hint}</div></div>`;
+}
+function notasDe(p){ return [...state.notas.values()].filter(n=>n.prom===p).sort((a,b)=>(b.fixado?1:0)-(a.fixado?1:0) || (b.criadoEm||'').localeCompare(a.criadoEm||'')); }
+function notaLi(n, comp){
+  const dt = n.criadoEm ? new Date(n.criadoEm).toLocaleDateString('pt-BR') : '';
+  return `<li class="${n.fixado?'pin':''}" data-nota-id="${esc(n.id)}"><p>${esc(n.texto)}</p><div class="nm">${n.origem?`<span>${esc(n.origem)}</span>`:''}<span>${dt}</span>${comp?'':`<button data-note-pin>${n.fixado?'Desafixar':'Fixar em Hoje'}</button><button data-note-del class="${state.armed===n.id?'del-armed':''}">${state.armed===n.id?'Confirmar exclusão':'Apagar'}</button>`}</div></li>`;
+}
+function notasPanel(p){
+  const l = notasDe(p);
+  return `<section class="notes" aria-label="Lembretes ${PROMS[p].nome}"><h3>Lembretes e recomendações ${l.length?`<button class="btn ghost sm" data-note-copy="${p}" style="padding:0">Copiar todos</button>`:''}</h3>
+   ${l.length?`<ul>${l.map(n=>notaLi(n)).join('')}</ul>`:`<p class="small" style="margin:.4em 0 0">Guarde aqui as dicas e orientações do promotor, para não esquecer na hora da minuta.</p>`}
+   <form data-note-form="${p}"><textarea id="nn_${p}" placeholder="Ex.: Em ANPP, sempre pedir certidão de antecedentes atualizada."></textarea>
+   <input id="no_${p}" placeholder="De quem (ex.: Dr. Fulano, 12/10)"><button class="btn pri sm" type="submit">Salvar lembrete</button></form></section>`;
+}
+function checklistCard(p){
+  const P_ = PROMS[p]; const n = P_.fluxo.filter(([k])=>state.check[p+'_'+k]).length;
+  return `<div class="panel ck"><h3><span class="dot ${p}" style="width:10px;height:10px;border-radius:50%;display:inline-block"></span>${P_.nome}</h3>
+  <ol>${P_.fluxo.map(([k,l],i)=>{const on=!!state.check[p+'_'+k]; return `<li class="${on?'done':''}"><label><input type="checkbox" data-ck="${p}_${k}" ${on?'checked':''}><span class="step">${i+1}</span><span>${esc(l)}</span></label></li>`;}).join('')}</ol>
+  <div class="foot"><div class="bar ${n===P_.fluxo.length?'ok':''}" style="flex:1;min-width:80px"><i style="width:${Math.round(n/P_.fluxo.length*100)}%"></i></div><a href="${P_.drive}" target="_blank" rel="noopener" class="small">Abrir Drive ↗</a></div></div>`;
+}
+function motivo(i,u){
+  const c = state.cfg.promotorias[i.prom]||{}; const d = s => brI(s)+' ('+dow(s)+')';
+  const nU = s => { if(!s) return null; let n=0, x=today(); const alvo=s; while(P.iso(x)<alvo){ x=P.addDays(x,1); if(P.isBusiness(x,cfgCalc())) n++; } return n; };
+  const out=[];
+  if(i.tipo==='extra'){
+    out.push(u.key==='vencido'||u.key==='atrasado' ? `O prazo legal de encerramento venceu em ${d(i.vencimento)}, ${rel(i.vencimento)}. Providenciar a prorrogação ou o encerramento.` : `O prazo legal de encerramento vence em ${d(i.vencimento)}, ${rel(i.vencimento)}.`);
+  } else if(u.key==='vencido'){
+    out.push(`O prazo final venceu em ${d(i.prazoFinal)}. Juntar imediatamente.`);
+  } else {
+    const pfU = nU(i.prazoFinal);
+    let base='';
+    if(c.meta==='ciencia' && !i.cienciaReal) base = `Em ${PROMS[i.prom].nome} a manifestação sai antes da ciência, que expira em ${d(i.limiteCiencia)}`;
+    else if(c.meta==='aposCiencia') base = `Sua regra é juntar até o ${c.metaDias}º dia útil após a ciência (${brI(i.cienciaReal||i.limiteCiencia)}), ou seja, até ${d(i.meta)}`;
+    else if(c.meta==='ciencia') base = `A ciência já foi registrada em ${brI(i.cienciaReal)}; a meta é 1 dia útil antes do prazo final`;
+    else base = `A meta é ${c.metaDias} dia${c.metaDias>1?'s':''} út${c.metaDias>1?'eis':'il'} antes do prazo final`;
+    const quando = u.key==='atrasado' ? `A meta passou ${rel(i.meta)}` : u.key==='hoje' ? 'A meta é hoje' : `A meta é ${d(i.meta)}`;
+    out.push(`${quando}. ${base}. Prazo final: ${d(i.prazoFinal)}${pfU!=null?`, ${pfU===0?'hoje':pfU===1?'falta 1 dia útil':'faltam '+pfU+' dias úteis'}`:''}.`);
+  }
+  if((i.flags||[]).some(f=>/preso/i.test(f))) out.push('Réu preso: prioridade absoluta.');
+  if(i.progresso && i.progresso<100) out.push(`Já está em ${i.progresso}%.`);
+  return out.join(' ');
+}
+function viewHoje(){
+  const ad = adiantar(); const fix=[...state.notas.values()].filter(n=>n.fixado);
+  const andamento = `<section><div class="sechead"><h2>Andamento das caixas</h2></div><div class="grid3">${Object.keys(PROMS).map(p=>{const v=pct(p),f=feitos(p).length,t=f+pend(p).length;return `<button class="panel boxcard" data-tab="${p}"><div class="pt ${p}">${PROMS[p].nome}</div><div class="prog" style="margin-top:6px"><strong>${v}%</strong><div class="bar ${v===100&&t?'ok':''}"><i style="width:${v}%"></i></div></div><div class="small muted">${f} de ${t} feitos · ${pend(p).length} na fila</div></button>`;}).join('')}</div></section>`;
+  const grupos = {}; ad.forEach(([i,u])=>{ (grupos[u.key]=grupos[u.key]||{u,l:[]}).l.push(i); });
+  const fila = ad.length ? Object.values(grupos).map(({u,l})=>`<div class="group"><div class="gh"><span class="chip ${URG_CHIP[u.key]}">${u.label}</span><span class="small muted">${l.length}</span></div><div class="list focus">${l.map(i=>itemCard(i,true,motivo(i,u))).join('')}</div></div>`).join('')
+    : `<div class="empty">Nada vencendo até o próximo dia útil. Cole as caixas nas abas das promotorias para atualizar.</div>`;
+  const pins = fix.length ? `<div class="pinstrip one">${Object.keys(PROMS).map(p=>{const l=fix.filter(n=>n.prom===p); return l.length?`<div class="notes"><div class="pt ${p}">${PROMS[p].nome} · lembretes fixados</div><ul>${l.map(n=>notaLi(n,true)).join('')}</ul></div>`:'';}).join('')}</div>` : '';
+  return andamento + `<div class="layout" style="margin-top:28px"><div style="min-width:0"><div class="sechead"><h2>O que adiantar agora</h2><span class="small muted">Atrasados, de hoje e do próximo dia útil — com o porquê de cada um</span></div>${fila}</div>
+   <aside><div class="sechead" style="margin:0"><h2>Análise diária</h2><span class="small muted">zera todo dia</span></div>${Object.keys(PROMS).map(checklistCard).join('')}${pins}</aside></div>`;
+}
+function regraTxt(p){
+  const c = state.cfg.promotorias[p];
+  const cont = c.contagem==='uteis' ? 'dias úteis' : 'dias corridos, prorrogando para o próximo dia útil';
+  const meta = c.meta==='aposCiencia' ? `meta de ${c.metaDias} dia${c.metaDias>1?'s':''} út${c.metaDias>1?'eis':'il'} após a ciência` : c.meta==='conclusao' ? `meta de ${c.metaDias} dia${c.metaDias>1?'s':''} út${c.metaDias>1?'eis':'il'} após a conclusão` : c.meta==='ciencia' ? 'fazer antes da data limite de ciência (se a ciência já foi registrada, 1 dia útil antes do prazo final)' : `meta ${c.metaDias} dia${c.metaDias>1?'s':''} út${c.metaDias>1?'eis':'il'} antes do prazo final`;
+  return `Quando o sistema informa a data limite de manifestação, ela é o prazo final; senão, conto em ${cont}, a partir do dia seguinte à ciência${c.dobro?' (em dobro)':''}. ${meta[0].toUpperCase()+meta.slice(1)}.`;
+}
+function pasteBox(p, kind){
+  const id = 'paste_'+p+'_'+kind; const res = state.drafts[id];
+  const ultima = state.cfg.leituras[p+'_'+kind];
+  if(kind==='extra') return `<details class="panel paste" data-k="${id}" ${!pend(p).some(i=>i.tipo==='extra')?'open':''}><summary><b>Atualizar pela agenda do mês (PDF)</b> <span class="small muted">${ultima?'última leitura '+new Date(ultima).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):''}</span></summary>
+    <p class="small muted">Envie a agenda gerada no sistema. Entram só os do <b>${esc(state.cfg.cargoGuarabira)}</b>, com <b>Prazo legal de encerramento</b> e último dígito <b>${state.cfg.paridade}</b>.</p>
+    <div class="row"><input type="file" id="pdf_${p}" accept="application/pdf"> <span class="small muted">ou cole o texto do PDF abaixo</span></div>
+    <textarea id="${id}" placeholder="Cole aqui o texto da agenda…" style="margin-top:8px"></textarea>
+    <div class="row" style="margin-top:8px"><button class="btn pri" data-read="${p}" data-kind="extra">Ler agenda</button></div>${res||''}</details>`;
+  return `<details class="panel paste" data-k="${id}" ${!pend(p).some(i=>i.tipo!=='extra')?'open':''}><summary><b>Colar a caixa</b> <span class="small muted">${ultima?'última leitura '+new Date(ultima).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'ainda não lida'}</span></summary>
+    <p class="small muted">Selecione a tabela de expedientes inteira no sistema (Ctrl+A, Ctrl+C) e cole aqui. ${p==='guarabira'?'Só entram os de dígito <b>'+state.cfg.paridade+'</b> antes do hífen no número de origem.':''}${p==='caapora'&&state.cfg.promotorias.caapora.soCivel?'Só entram os <b>cíveis</b>; os penais ficam listados à parte.':''}${p==='caapora'&&filtroConclusorAtivo()?' Até '+brI(state.cfg.promotorias.caapora.conclusorAte)+', só os conclusos a <b>'+esc(state.cfg.promotorias.caapora.conclusor)+'</b>.':''}</p>
+    <textarea id="${id}" placeholder="#  Expediente  Processo  Situação …"></textarea>
+    <div class="row" style="margin-top:8px"><button class="btn pri" data-read="${p}" data-kind="judicial">Ler caixa</button><span class="small muted">${esc(regraTxt(p))}</span></div>${res||''}</details>`;
+}
+function grouped(list){
+  const g = {}; list.forEach(i=>{ const u=urg(i); (g[u.key]=g[u.key]||{u,items:[]}).items.push(i); });
+  return Object.values(g).sort((a,b)=>a.u.ord-b.u.ord).map(({u,items})=>`<div class="group"><div class="gh"><span class="chip ${URG_CHIP[u.key]}">${u.label}</span><span class="small muted">${items.length}</span></div><div class="list">${items.sort((a,b)=>(a.meta||'').localeCompare(b.meta||'')).map(i=>itemCard(i)).join('')}</div></div>`).join('');
+}
+function viewProm(p){
+  const v = pct(p), f = feitos(p).length, all = f + pend(p).length;
+  let body = '';
+  const head = `<section class="panel"><div class="sechead" style="margin:0"><div><div class="pt ${p}">${PROMS[p].nome}</div><h2>${f} de ${all} feitos</h2></div><a href="${PROMS[p].drive}" target="_blank" rel="noopener">Drive da promotoria ↗</a></div>
+    <div class="prog" style="margin-top:8px"><strong>${v}%</strong><div class="bar ${v===100&&all?'ok':''}"><i style="width:${v}%"></i></div></div></section>`;
+  if(p==='guarabira'){
+    const sub = state.sub.guarabira;
+    const jud = pend(p).filter(i=>i.tipo!=='extra'), ext = pend(p).filter(i=>i.tipo==='extra');
+    const fx = k => ext.filter(i=>P.faixaExtra(i,today())===k);
+    body = `<div class="subtabs"><button data-sub="judiciais" aria-pressed="${sub==='judiciais'}">Judiciais · ${jud.length}</button><button data-sub="extra" aria-pressed="${sub==='extra'}">Extrajudiciais (pares) · ${ext.length}</button></div>`;
+    if(sub==='judiciais') body += pasteBox(p,'judicial') + (jud.length?grouped(jud):`<div class="empty" style="margin-top:12px">Nenhum expediente judicial pendente.</div>`);
+    else {
+      const e = state.sub.extra; const labels = {vencidos:'Vencidos',vincendos:'Vincendos (até 30 dias)',mais30:'+ de 30 dias'};
+      const lst = fx(e).sort((a,b)=>(a.vencimento||'').localeCompare(b.vencimento||''));
+      body += pasteBox(p,'extra') + `<div class="subtabs" style="margin-top:14px">${Object.keys(labels).map(k=>`<button data-extra="${k}" aria-pressed="${e===k}">${labels[k]} · ${fx(k).length}</button>`).join('')}</div>`
+        + (lst.length ? `<div class="list">${lst.map(i=>itemCard(i)).join('')}</div>` : `<div class="empty">Nada nesta faixa.</div>`);
+    }
+  } else {
+    const l = pend(p);
+    body = pasteBox(p,'judicial') + (p==='caapora' ? `<p class="note" style="margin-top:12px">Em Caaporã você fica com os <b>cíveis</b> (improbidade, ACP, MS, família, infância protetiva, saúde). Ao colar a caixa, os penais são separados e ficam com o colega; dá para incluir algum se ele pedir ajuda. A meta é sair <b>antes da ciência</b>. SEEU fica com o Neto — aqui você só registra o download dos processos e do atestado de pena no checklist do dia.</p>` : '')
+      + (l.length ? grouped(l) : `<div class="empty" style="margin-top:12px">Nenhum expediente pendente. Cole a caixa acima.</div>`);
+  }
+  return `<div class="layout"><div style="min-width:0">${head}<section>${body}</section></div><aside>${notasPanel(p)}${checklistCard(p)}</aside></div>`;
+}
+function itemCard(i, showProm, why){
+  const u = urg(i); const prog = i.progresso||0;
+  const ausente = i.vistoEm && state.cfg.leituras[i.prom+'_'+(i.tipo==='extra'?'extra':'judicial')] > i.vistoEm;
+  const isExtra = i.tipo==='extra';
+  const dates = isExtra
+    ? `<div><span class="lbl">Instaurado</span><b>${brI(i.inicio)}</b></div><div class="${u.ord<=1?'bad':'hl'}"><span class="lbl">Encerramento legal</span><b>${brI(i.vencimento)} <span class="small muted">${rel(i.vencimento)}</span></b></div>`
+    : `<div><span class="lbl">Expedição</span><b>${brI(i.expedicao)}</b></div>${i.cienciaReal?`<div><span class="lbl">Ciência registrada</span><b>${brI(i.cienciaReal)}</b></div>`:`<div><span class="lbl">Limite ciência</span><b>${brI(i.limiteCiencia)} <span class="small muted">${rel(i.limiteCiencia)}</span></b></div>`}<div><span class="lbl">Prazo</span><b>${i.prazoDias?i.prazoDias+' dias':'sem prazo'}</b></div><div class="${u.key==='vencido'?'bad':''}"><span class="lbl">Prazo final</span><b>${brI(i.prazoFinal)} <span class="small muted">${dow(i.prazoFinal)}</span></b></div><div class="${u.ord<=1?'bad':'hl'}"><span class="lbl">Minha meta</span><b>${brI(i.meta)} <span class="small muted">${rel(i.meta)}</span></b></div>`;
+  return `<article class="item u-${u.key}" data-id="${esc(i.id)}">
+   <div class="l1">${showProm?`<span class="pt ${i.prom}">${PROMS[i.prom].nome}</span>`:''}<span class="proc">${esc(i.processo)}</span>${i.numOrigem?`<span class="mono small muted">${esc(i.numOrigem)}</span>`:''}
+     ${(i.flags||[]).map(f=>`<span class="chip ${/preso/i.test(f)?'danger':'info'}">${esc(f)}</span>`).join('')}
+     ${i.area==='penal'&&i.prom==='caapora'?'<span class="chip warn">penal · ajuda ao colega</span>':''}${i.area==='duvida'?'<span class="chip warn">conferir se é cível</span>':''}
+     ${showProm&&!why?`<span class="chip ${URG_CHIP[u.key]}">${u.label}</span>`:''}${ausente?`<span class="chip warn" title="Não estava na última caixa colada">fora da última caixa</span>`:''}</div>
+   ${why?`<div class="why why-${u.key}"><span class="lbl">Por que agora</span><span>${esc(why)}</span></div>`:''}
+   ${isExtra ? `<div class="cls">${esc((i.interessados||[]).join(' · ')||'Sem interessados')}</div>` : `<div class="cls">${esc(i.classe)}</div><div class="meta-line">${esc(i.vara)}${i.partes?' · '+esc(i.partes):''}</div>`}
+   ${(i.tags&&i.tags.length)||i.expediente?`<div class="row">${i.expediente?`<span class="tag">Exp. ${esc(i.expediente)}</span>`:''}${(i.tags||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join('')}${i.conclusor?`<span class="small muted">Concl. ${esc(i.conclusor)} em ${brI(i.conclusao)}</span>`:''}</div>`:''}
+   <div class="dates">${dates}</div>
+   <div class="ctrl"><span class="lbl">Feitura</span><div class="seg" role="group">${[0,25,50,75,100].map(v=>`<button data-prog="${v}" aria-pressed="${prog===v}">${v}%</button>`).join('')}</div>
+     <input type="text" id="nota_${esc(i.id)}" data-nota value="${esc(i.notas||'')}" placeholder="Anotação (ex.: minuta no Drive, falta laudo)">
+     <button class="btn sm pri" data-done>Marcar feito</button></div>
+   ${isExtra?'':`<details class="more" data-k="m_${esc(i.id)}"><summary>Ajustar datas</summary><div class="in">
+     <label>Ciência dada em <input type="date" data-f="cienciaReal" value="${i.cienciaReal||''}"></label>
+     <label>Meta manual <input type="date" data-f="metaManual" value="${i.metaManual||''}"></label>
+     <label>Prazo em dias <input type="number" min="0" data-f="prazoDiasOrig" value="${i.prazoDiasOrig||''}"></label>
+     <div class="row" style="align-items:end"><button class="btn sm ghost" data-remove>Remover da lista</button></div></div></details>`}
+  </article>`;
+}
+function viewFeitos(){
+  const list = [...state.itens.values()].filter(i=>i.status==='feito').sort((a,b)=>(b.feitoEm||'').localeCompare(a.feitoEm||''));
+  if(!list.length) return `<div class="empty">Quando você marcar um item como feito, ele sai da fila e aparece aqui.</div>`;
+  return Object.keys(PROMS).map(p=>{ const l=list.filter(i=>i.prom===p); if(!l.length) return ''; return `<section><div class="sechead"><h2>${PROMS[p].nome}</h2><span class="small muted">${l.length} feito${l.length>1?'s':''}</span></div><div class="list">${l.map(i=>`<div class="feito" data-id="${esc(i.id)}"><span class="proc mono">${esc(i.processo)}</span><span class="grow">${esc(i.tipo==='extra'?(i.interessados||[]).join(' · '):i.classe)}${i.notas?` <span class="muted">— ${esc(i.notas)}</span>`:''}</span><span class="small muted">feito ${brI(i.feitoEm)}${i.meta?` · meta ${brI(i.meta)}`:''}</span>${i.meta && i.feitoEm && i.feitoEm<=i.meta?'<span class="chip ok">no prazo</span>':(i.meta?'<span class="chip warn">após a meta</span>':'')}<button class="btn sm" data-reopen>Reabrir</button></div>`).join('')}</div></section>`; }).join('');
+}
+function viewAjustes(){
+  const c = state.cfg;
+  return `<section class="panel cfg"><h2>Regras de contagem</h2>
+  ${Object.keys(PROMS).map(p=>{const x=c.promotorias[p];return `<div class="f"><div class="pt ${p}">${PROMS[p].nome}</div><div class="row">
+   <select data-cfg="${p}.contagem" aria-label="Contagem"><option value="corridos" ${x.contagem==='corridos'?'selected':''}>Dias corridos (CPP, art. 798)</option><option value="uteis" ${x.contagem==='uteis'?'selected':''}>Dias úteis (CPC, art. 219)</option></select>
+   <select data-cfg="${p}.meta" aria-label="Meta"><option value="aposCiencia" ${x.meta==='aposCiencia'?'selected':''}>Meta: N dias úteis após a ciência</option><option value="conclusao" ${x.meta==='conclusao'?'selected':''}>Meta: N dias úteis após a conclusão</option><option value="ciencia" ${x.meta==='ciencia'?'selected':''}>Meta: antes da ciência</option><option value="prazo" ${x.meta==='prazo'?'selected':''}>Meta: N dias úteis antes do prazo final</option></select>
+   <label class="small">N <input type="number" min="0" max="15" style="width:64px" data-cfg="${p}.metaDias" value="${x.metaDias}"></label>
+   ${p==='caapora'?`<label class="small"><input type="checkbox" data-cfg="${p}.soCivel" ${x.soCivel?'checked':''}> só cíveis ao colar (penais ficam com o colega)</label>
+   <label class="small">só conclusos a <input style="width:150px" data-cfgp="${p}.conclusor" value="${esc(x.conclusor||'')}"> até <input type="date" data-cfgp="${p}.conclusorAte" value="${esc(x.conclusorAte||'')}"></label>`:''}</div></div>`;}).join('')}
+  <p class="small muted">O "Prazo" que vem na caixa já está em dobro para o MP, então não há dobra a aplicar.</p>
+  <div class="f"><span class="lbl">Feriados e pontos facultativos extras</span><textarea data-cfgtxt="feriadosExtras">${esc((c.feriadosExtras||[]).join(', '))}</textarea><span class="small muted">Já contados automaticamente: feriados nacionais, Carnaval, Sexta-feira Santa, Corpus Christi e 5 de agosto (Paraíba).</span></div>
+  <label class="small"><input type="checkbox" data-cfg="recessoUteis" ${c.recessoUteis?'checked':''}> Suspender prazos em dias úteis de 20/12 a 20/01 (art. 220 CPC)</label>
+  <div class="row"><label class="f small">Cargo em Guarabira <input data-cfgtxt="cargoGuarabira" value="${esc(c.cargoGuarabira)}"></label>
+   <label class="f small">Paridade <select data-cfg="paridade"><option value="par" ${c.paridade==='par'?'selected':''}>pares</option><option value="impar" ${c.paridade==='impar'?'selected':''}>ímpares</option></select></label></div></section>
+  ${window.MesaHooks && MesaHooks.ajustesHtml ? MesaHooks.ajustesHtml() : ''}
+  <section class="panel cfg"><h2>Recomeçar</h2><p class="small muted" style="margin:0">Apaga todos os expedientes, os feitos e as leituras de caixa. Ajustes, lembretes e checklist ficam.</p>
+   <div class="row"><button class="btn" data-zerar style="${state.armed==='zerar'?'border-color:var(--danger);color:var(--danger)':''}">${state.armed==='zerar'?'Confirmar: apagar todos os expedientes':'Apagar todos os expedientes'}</button></div></section>
+  ${window.MesaHooks?'':`  <section class="panel"><h2>Resumo por e-mail</h2><p class="small muted" style="margin:.4em 0 0">Uma tarefa agendada lê esta mesa nos dias úteis de manhã e manda para o seu e-mail o que vence, o que está atrasado e o que precisa ser adiantado. Para mudar o horário ou pausar, peça ao Claude na conversa.</p></section>`}`;
+}
+
+/* ---------- leitura das caixas ---------- */
+async function lerCaixa(p){
+  const id = 'paste_'+p+'_judicial'; const txt = (document.getElementById(id)||{}).value||'';
+  const lidos = P.parseCaixa(txt);
+  if(!lidos.length){ state.drafts[id] = `<div class="note warn" style="margin-top:10px">Não encontrei nenhum "Expediente (número)" no texto. Copie a tabela inteira da caixa, incluindo as linhas de expediente.</div>`; render(); return; }
+  const agora = Date.now(); let novos=0, atual=0; const ign=[];
+  for(const x of lidos){
+    const ar = P.classificaArea(x); x.area = ar.area; x.areaMotivo = ar.motivo;
+    if(p==='guarabira'){ const dg = P.digitoJudicial(x.numOrigem); const par = state.cfg.paridade==='par'; if(dg==null || (dg%2===0)!==par){ x._motivo='dígito '+(dg==null?'?':dg)+' antes do hífen'; ign.push(x); continue; } }
+    if(p==='caapora' && state.cfg.promotorias.caapora.soCivel && ar.area==='penal'){ x._motivo='penal · '+ar.motivo; ign.push(x); continue; }
+    if(p==='caapora' && filtroConclusorAtivo() && !norm(x.conclusor).includes(norm(state.cfg.promotorias.caapora.conclusor))){ x._motivo='concluso a '+(x.conclusor||'outro'); ign.push(x); continue; }
+    const docId = 'j-'+p+'-'+x.expediente; const old = state.itens.get(docId);
+    const base = Object.assign({}, x, {id:docId, prom:p, tipo:'judicial', prazoDiasOrig:x.prazoDias, vistoEm:agora});
+    const it = old ? Object.assign({}, old, base, {prazoDiasOrig: old.prazoDiasEditado ? old.prazoDiasOrig : x.prazoDias, status:old.status, progresso:old.progresso, notas:old.notas, cienciaReal:x.cienciaReal||old.cienciaReal, metaManual:old.metaManual, feitoEm:old.feitoEm}) : Object.assign(base,{status:'pendente',progresso:0,notas:'',criadoEm:P.iso(today())});
+    calc(it); old ? atual++ : novos++; await store.putItem(it);
+  }
+  state.cfg.leituras[p+'_judicial'] = agora; await store.putCfg();
+  document.getElementById(id).value = '';
+  const urgentes = lidos.map(x=>state.itens.get('j-'+p+'-'+x.expediente)).filter(i=>i && i.status!=='feito' && urg(i).ord<=3);
+  state.drafts[id] = `<div class="res"><div class="note">Li <b>${lidos.length}</b> expediente${lidos.length>1?'s':''}: ${novos} novo${novos!==1?'s':''}, ${atual} atualizado${atual!==1?'s':''}${ign.length?`, ${ign.length} separado${ign.length>1?'s':''}`:''}. ${urgentes.length?`<b>${urgentes.length} para adiantar já:</b> ${urgentes.map(i=>esc(i.processo)+' (meta '+brI(i.meta)+')').join('; ')}.`:'Nenhum precisa ser adiantado até o próximo dia útil.'}</div>
+    ${ign.length?`<div class="lbl" style="margin-top:6px">${p==='caapora'?'Separados — penais (colega) ou conclusos a outra pessoa':'Fora da sua paridade'}</div>`:''}
+    ${ign.map(x=>`<div class="ign" data-ign="${esc(x.expediente)}"><span class="mono">${esc(x.processo)}</span><span class="grow" style="flex:1;min-width:160px">${esc(x.classe)}<span class="muted"> · ${esc(x._motivo)}</span></span><span class="small muted">ciência ${brI(x.cienciaReal||x.limiteCiencia)}</span><button class="btn sm" data-incl='${esc(JSON.stringify(Object.assign({},x,{_p:p})))}'>Incluir para ajudar</button></div>`).join('')}</div>`;
+  render(); toast(novos+atual ? 'Caixa lida e organizada' : 'Nada novo na caixa');
+}
+function norm(s){ return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().trim(); }
+function filtroConclusorAtivo(){ const c=state.cfg.promotorias.caapora; return !!(c.conclusor && c.conclusorAte && P.iso(today())<=c.conclusorAte); }
+async function incluir(x){
+  const p=x._p||'guarabira'; delete x._p; delete x._motivo;
+  const dk='paste_'+p+'_judicial'; if(state.drafts[dk]) state.drafts[dk]=state.drafts[dk].replace(new RegExp('<div class="ign" data-ign="'+x.expediente+'">[\\s\\S]*?</button></div>'),''); const docId='j-'+p+'-'+x.expediente;
+  const it = Object.assign({}, x, {id:docId, prom:p, tipo:'judicial', prazoDiasOrig:x.prazoDias, vistoEm:Date.now(), status:'pendente', progresso:0, notas:'', criadoEm:P.iso(today())});
+  calc(it); await store.putItem(it); render(); toast('Incluído na sua fila');
+}
+async function textoDoPdf(file){
+  const buf = await file.arrayBuffer();
+  const pdf = await window.pdfjsLib.getDocument({data:buf}).promise; const pages=[];
+  for(let n=1;n<=pdf.numPages;n++){ const pg = await pdf.getPage(n); const tc = await pg.getTextContent(); pages.push(tc.items.map(it=>({str:it.str, x:it.transform[4], y:it.transform[5]}))); }
+  return P.agendaDePosicoes(pages);
+}
+async function lerAgenda(p){
+  const id='paste_'+p+'_extra'; const fi=document.getElementById('pdf_'+p); let txt=(document.getElementById(id)||{}).value||'';
+  try{ if(fi && fi.files && fi.files[0]){ if(!window.pdfjsLib) throw new Error('leitor de PDF não carregou'); txt = await textoDoPdf(fi.files[0]); } }
+  catch(e){ state.drafts[id]=`<div class="note warn" style="margin-top:10px">Não consegui ler o PDF (${esc(e.message)}). Abra o PDF, copie todo o texto e cole na caixa.</div>`; render(); return; }
+  const todos = P.parseAgenda(txt); const meus = P.filtraAgenda(todos, state.cfg);
+  if(!todos.length){ state.drafts[id]=`<div class="note warn" style="margin-top:10px">Não encontrei números de procedimento (000.0000.000000) no conteúdo.</div>`; render(); return; }
+  const agora=Date.now(); let novos=0;
+  for(const x of meus){
+    const docId='x-'+x.processo.replace(/\./g,'_'); const old=state.itens.get(docId);
+    const it = Object.assign({}, old||{status:'pendente',progresso:0,notas:'',criadoEm:P.iso(today())}, {id:docId, prom:p, tipo:'extra', processo:x.processo, interessados:x.interessados, distribuido:x.distribuido, inicio:x.inicio, vencimento:x.vencimento, vistoEm:agora});
+    calc(it); if(!old) novos++; await store.putItem(it);
+  }
+  state.cfg.leituras[p+'_extra']=agora; await store.putCfg();
+  const f = k => meus.filter(i=>P.faixaExtra(i,today())===k).length;
+  state.drafts[id] = `<div class="note" style="margin-top:10px">A agenda tem <b>${todos.length}</b> procedimentos; <b>${meus.length}</b> são seus (${novos} novos): ${f('vencidos')} vencidos, ${f('vincendos')} vincendos, ${f('mais30')} com mais de 30 dias.</div>`;
+  if(fi) fi.value=''; const ta=document.getElementById(id); if(ta) ta.value='';
+  render(); toast('Agenda lida');
+}
+
+/* ---------- eventos ---------- */
+document.addEventListener('click', async e=>{
+  const t = e.target.closest('button,input[type=checkbox]'); if(!t) return;
+  if(t.dataset.tab){ state.tab=t.dataset.tab; try{localStorage.setItem('mp_tab',state.tab);}catch(_){} render(); return; }
+  if(t.dataset.sub){ state.sub.guarabira=t.dataset.sub; render(); return; }
+  if(t.dataset.extra){ state.sub.extra=t.dataset.extra; render(); return; }
+  if(t.dataset.read){ t.disabled=true; t.textContent='Lendo…'; try{ t.dataset.kind==='extra' ? await lerAgenda(t.dataset.read) : await lerCaixa(t.dataset.read); }catch(err){ toast('Erro ao salvar: '+(err&&err.code||err.message||'tente de novo')); render(); } return; }
+  if(t.dataset.incl){ await incluir(JSON.parse(t.dataset.incl)); return; }
+  if(t.hasAttribute('data-note-pin')||t.hasAttribute('data-note-del')){ const id=t.closest('[data-nota-id]').dataset.notaId; const n=state.notas.get(id); if(!n) return;
+    if(t.hasAttribute('data-note-pin')){ await store.putNota(Object.assign({},n,{fixado:!n.fixado})); render(); toast(n.fixado?'Lembrete desafixado':'Fixado na aba Hoje'); return; }
+    if(state.armed!==id){ state.armed=id; render(); setTimeout(()=>{ if(state.armed===id){ state.armed=null; render(); } },4000); return; }
+    state.armed=null; await store.delNota(id); render(); toast('Lembrete apagado'); return; }
+  if(t.dataset.noteCopy){ const txt = notasDe(t.dataset.noteCopy).map(n=>'• '+n.texto+(n.origem?' ('+n.origem+')':'')).join('\n');
+    try{ await navigator.clipboard.writeText(PROMS[t.dataset.noteCopy].nome+' — lembretes\n'+txt); toast('Lembretes copiados'); }catch(_){ toast('Não consegui copiar; selecione o texto manualmente'); } return; }
+  if(t.hasAttribute('data-zerar')){ if(state.armed!=='zerar'){ state.armed='zerar'; render(); setTimeout(()=>{ if(state.armed==='zerar'){ state.armed=null; render(); } },5000); return; }
+    state.armed=null; const ids=[...state.itens.keys()]; if(db){ for(const id of ids) await db.doc('itens/'+id).delete(); } state.itens.clear(); state.cfg.leituras={}; state.drafts={}; await store.putCfg(); if(!db) saveLocal(); render(); toast(ids.length+' expedientes apagados'); return; }
+  if(t.dataset.timer){ await toggleTimer(t.dataset.timer); return; }
+  if(t.hasAttribute('data-fechar-gaeco')){ await fecharGaeco(); return; }
+  if(t.dataset.ck){ state.check[t.dataset.ck]=t.checked; render(); await store.putCheck(); return; }
+  const card = t.closest('[data-id]'); if(!card) return; const it = state.itens.get(card.dataset.id); if(!it) return;
+  const upd = Object.assign({}, it);
+  if(t.dataset.prog!=null){ upd.progresso=+t.dataset.prog; if(upd.progresso===100){ upd.status='feito'; upd.feitoEm=P.iso(today()); } }
+  else if(t.hasAttribute('data-done')){ upd.status='feito'; upd.progresso=100; upd.feitoEm=P.iso(today()); }
+  else if(t.hasAttribute('data-reopen')){ upd.status='pendente'; upd.progresso=75; delete upd.feitoEm; }
+  else if(t.hasAttribute('data-remove')){ await store.delItem(it.id); render(); toast('Removido'); return; }
+  else return;
+  await store.putItem(upd); render();
+  if(upd.status==='feito' && it.status!=='feito'){ const m=metaDia(); toast(m.alvo && m.devidos===0 ? 'Meta do dia cumprida! 🎉' : m.devidos ? `Feito! Faltam ${m.devidos} para fechar o dia` : 'Feito e movido para Feitos'); }
+});
+document.addEventListener('submit', async e=>{
+  const f=e.target; if(!f.dataset.noteForm) return; e.preventDefault(); const p=f.dataset.noteForm;
+  const tx=document.getElementById('nn_'+p), og=document.getElementById('no_'+p); const texto=(tx.value||'').trim(); if(!texto){ tx.focus(); return; }
+  const n={id:'n'+Date.now().toString(36)+Math.random().toString(36).slice(2,6), prom:p, texto, origem:(og.value||'').trim(), criadoEm:new Date().toISOString(), fixado:false};
+  tx.value=''; og.value='';
+  try{ await store.putNota(n); render(); toast('Lembrete salvo'); }catch(err){ tx.value=texto; toast('Não salvou ('+(err&&err.code||'erro')+'). Tente de novo.'); }
+});
+const notaTimers={};
+document.addEventListener('input', e=>{
+  const t=e.target; if(!t.hasAttribute('data-nota')) return; const id=t.closest('[data-id]').dataset.id;
+  clearTimeout(notaTimers[id]); notaTimers[id]=setTimeout(async()=>{ const it=state.itens.get(id); if(!it||it.notas===t.value) return; await store.putItem(Object.assign({},it,{notas:t.value})); },700);
+});
+document.addEventListener('change', async e=>{
+  const t=e.target;
+  if(t.dataset.f){ const id=t.closest('[data-id]').dataset.id; const it=Object.assign({},state.itens.get(id)); if(t.dataset.f==='prazoDiasOrig'){ it.prazoDiasOrig = t.value?+t.value:null; it.prazoDiasEditado=true; } else it[t.dataset.f]=t.value||null; calc(it); await store.putItem(it); render(); return; }
+  if(t.dataset.cfg){ const path=t.dataset.cfg.split('.'); const val = t.type==='checkbox'?t.checked:(t.type==='number'?+t.value:t.value);
+    if(path.length===2) state.cfg.promotorias[path[0]][path[1]]=val; else state.cfg[path[0]]=val; await recalcAll(); return; }
+  if(t.dataset.cfgp){ const [a,b]=t.dataset.cfgp.split('.'); state.cfg.promotorias[a][b]=t.value.trim(); await store.putCfg(); render(); toast('Ajuste salvo'); return; }
+  if(t.dataset.cfgtxt){ const k=t.dataset.cfgtxt; state.cfg[k] = k==='feriadosExtras' ? t.value.split(/[,;\s]+/).filter(s=>/\d{2}\/\d{2}\/\d{4}/.test(s)) : t.value.trim(); await recalcAll(); }
+});
+async function recalcAll(){
+  await store.putCfg();
+  for(const it of [...state.itens.values()]){ if(it.status==='feito') continue; const before=it.meta+'|'+it.prazoFinal; const c=Object.assign({},it); calc(c); if(c.meta+'|'+c.prazoFinal!==before) await store.putItem(c); }
+  render(); toast('Ajuste salvo e prazos recalculados');
+}
+boot();
+})();
+</script>
+
+</body>
+</html>
