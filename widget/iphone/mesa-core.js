@@ -189,18 +189,23 @@ function montar(r, aviso) {
   return w;
 }
 
-function montarMedio(r, aviso) {
-  const w = new ListWidget(); w.backgroundColor = C.fundo; w.setPadding(11, 13, 10, 13); w.url = SITE;
+function montarMedio(r, aviso, MAXI) {
+  const G = !!MAXI;
+  const w = new ListWidget(); w.backgroundColor = C.fundo; w.setPadding(G ? 14 : 11, 13, G ? 12 : 10, 13); w.url = SITE;
   const { ab, pend, obs, lista } = r;
   const cor = pend.length ? C.vermelho : obs.length ? C.laranja : C.verde;
   // topo: título + situação
   const topo = w.addStack(); topo.centerAlignContent();
-  txt(topo, 'Mesa de Prazos', 13, C.tinta, 'b'); topo.addSpacer();
+  txt(topo, 'Mesa de Prazos', G ? 15 : 13, C.tinta, 'b'); topo.addSpacer();
   txt(topo, pend.length ? `● ${pend.length} pendência${pend.length > 1 ? 's' : ''}` : obs.length ? '● Em dia · observar' : '● Tudo em dia', 11, cor, 'b');
   w.addSpacer(2);
   const resumo = pend.length ? pend.join(' · ') : obs.length ? obs.join(' · ') : 'Nada atrasado nem para hoje.';
-  txt(w, resumo, 9.5, pend.length ? C.tinta : C.fraco);
-  w.addSpacer(5);
+  if (G) {
+    if (pend.length) txt(w, 'Pendente: ' + pend.join(' · '), 10, C.tinta).lineLimit = 2;
+    if (obs.length) txt(w, 'Observar: ' + obs.join(' · '), 10, C.fraco).lineLimit = 2;
+    if (!pend.length && !obs.length) txt(w, resumo, 10, C.fraco);
+  } else txt(w, resumo, 9.5, pend.length ? C.tinta : C.fraco);
+  w.addSpacer(G ? 8 : 5);
   // promotorias numa linha
   const pr = w.addStack(); pr.spacing = 5;
   for (const p of ['gaeco', 'caapora', 'guarabira']) {
@@ -211,9 +216,9 @@ function montarMedio(r, aviso) {
     txt(c, String(lst.length) + (crit ? ` (${crit} já)` : ''), 9.5, crit ? C.laranja : C.tinta, 'm');
     txt(c, lida ? '✓' : '○', 9, lida ? C.verde : C.laranja, 'b');
   }
-  w.addSpacer(5);
-  // até 3 itens
-  const MAX = 3;
+  w.addSpacer(G ? 8 : 5);
+  // itens
+  const MAX = MAXI || 3;
   if (!lista.length) txt(w, 'Nada vencendo até o próximo dia útil.', 10.5, C.fraco);
   for (const i of lista.slice(0, MAX)) {
     const row = w.addStack(); row.centerAlignContent(); row.spacing = 6;
@@ -222,8 +227,9 @@ function montarMedio(r, aviso) {
     const titulo = i.tipo === 'urgencia' ? `${TIPOS[i.urgTipo] || 'Urgência'}${i.processo ? ' · ' + i.processo : ''}` : `${NOMES[i.prom]} · ${i.processo || 'expediente'}`;
     txt(row, (preso ? '⚠︎ ' : '') + titulo, 10.5, i.tipo === 'urgencia' ? C.vermelho : C.tinta, 'm');
     row.addSpacer();
+    if (G) { row.addSpacer(4); txt(row, br(i.tipo === 'extra' ? i.vencimento : i.meta), 9.5, C.fraco, 'mono'); row.addSpacer(4); }
     txt(row, i.s.txt, 9.5, COR_SIT[i.s.k], 'b');
-    w.addSpacer(2);
+    w.addSpacer(G ? 5 : 2);
   }
   w.addSpacer();
   const rod = w.addStack();
@@ -244,7 +250,7 @@ const widget = leitura.erro ? telaErro(leitura.erro) : (() => {
   const r = analisar(leitura.j);
   const salvo = leitura.j.salvoEm ? new Date(leitura.j.salvoEm) : null;
   const grande = config.widgetFamily === 'large';
-  const w = grande ? montar(r, leitura.aviso) : montarMedio(r, leitura.aviso);
+  const w = grande ? montarMedio(r, leitura.aviso, 9) : montarMedio(r, leitura.aviso);
   if (false) {
     const df = new DateFormatter(); df.dateFormat = 'dd/MM HH:mm';
     const t = w.addText('dados de ' + df.string(salvo)); t.font = Font.systemFont(8); t.textColor = C.fraco; t.rightAlignText();
@@ -252,6 +258,6 @@ const widget = leitura.erro ? telaErro(leitura.erro) : (() => {
   return w;
 })();
 const prox = new Date(); prox.setMinutes(prox.getMinutes() + 15); widget.refreshAfterDate = prox;
-if (config.runsInWidget) Script.setWidget(widget); else await widget.presentMedium();
+if (config.runsInWidget) Script.setWidget(widget); else await widget.presentLarge();
 Script.complete();
 };
