@@ -1211,7 +1211,7 @@ async function lerTram30(p){
   const vistos=new Map();
   ms.forEach((m,k)=>{ const num=m[0]; if(vistos.has(num)) return; const fim = k+1<ms.length ? ms[k+1].index : txt.length; const trecho = txt.slice(m.index+num.length, fim).replace(/\s+/g,' ').trim();
     const dt = /(\d{2}\/\d{2}\/\d{4})/.exec(trecho); const dd = /(\d+)\s*dias?/i.exec(trecho);
-    vistos.set(num,{num, desc:trecho.replace(/\d{2}\/\d{2}\/\d{4}(\s+\d{2}:\d{2}(:\d{2})?)?/g,'').replace(/\s+/g,' ').trim().slice(0,160), desde: dt?P.iso(P.fromBR(dt[1])):null, dias: dd?+dd[1]:null}); });
+    vistos.set(num,{num, desc:trecho.replace(/\d{2}\/\d{2}\/\d{4}(\s+\d{2}:\d{2}(:\d{2})?)?/g,'').replace(/\b\d+\s*dias?\b/gi,'').replace(/\s+/g,' ').trim().slice(0,160), desde: dt?P.iso(P.fromBR(dt[1])):null, dias: dd?+dd[1]:null}); });
   const par = state.cfg.paridade==='par'; const agora=Date.now(); let novos=0, atual=0, outros=0; const jaFeitos=[];
   for(const x of vistos.values()){
     if((P.ultimoDigito(x.num)%2===0)!==par){ outros++; continue; }
