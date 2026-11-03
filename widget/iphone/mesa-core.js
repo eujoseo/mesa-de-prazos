@@ -123,7 +123,7 @@ function txt(st, s, size, cor, peso) {
   t.lineLimit = 1; return t;
 }
 function montar(r, aviso) {
-  const w = new ListWidget(); w.backgroundColor = C.fundo; w.setPadding(14, 14, 12, 14); w.url = SITE;
+  const w = new ListWidget(); w.backgroundColor = C.fundo; w.setPadding(10, 12, 8, 12); w.url = SITE;
   const { ab, pend, obs, lista } = r;
 
   // topo
@@ -131,41 +131,41 @@ function montar(r, aviso) {
   txt(topo, 'Mesa de Prazos', 15, C.tinta, 'b'); topo.addSpacer();
   const df = new DateFormatter(); df.locale = 'pt_BR'; df.dateFormat = "EEE, d 'de' MMM";
   txt(topo, df.string(new Date()), 11, C.fraco);
-  w.addSpacer(6);
+  w.addSpacer(4);
 
   // situação
-  const sit = w.addStack(); sit.layoutVertically(); sit.backgroundColor = C.cartao; sit.cornerRadius = 10; sit.setPadding(7, 10, 7, 10);
+  const sit = w.addStack(); sit.layoutVertically(); sit.backgroundColor = C.cartao; sit.cornerRadius = 10; sit.setPadding(5, 9, 5, 9);
   const cor = pend.length ? C.vermelho : obs.length ? C.laranja : C.verde;
   const l1 = sit.addStack(); l1.size = new Size(0, 0);
   txt(l1, pend.length ? `● ${pend.length} pendência${pend.length > 1 ? 's' : ''}` : obs.length ? '● Tudo em dia — observar' : '● Tudo em dia', 13, cor, 'b');
-  if (pend.length) { const t = txt(sit, 'Pendente: ' + pend.join(' · '), 10.5, C.tinta); t.lineLimit = 2; }
-  if (obs.length) { const t = txt(sit, 'Observar: ' + obs.join(' · '), 10.5, C.fraco); t.lineLimit = 2; }
+  if (pend.length) txt(sit, 'Pendente: ' + pend.join(' · '), 10, C.tinta);
+  if (obs.length) txt(sit, 'Observar: ' + obs.join(' · '), 10, C.fraco);
   w.addSpacer(6);
 
   // promotorias
   const pr = w.addStack(); pr.spacing = 6;
   for (const p of ['gaeco', 'caapora', 'guarabira']) {
-    const c = pr.addStack(); c.layoutVertically(); c.backgroundColor = C.cartao; c.cornerRadius = 9; c.setPadding(5, 8, 5, 8); c.size = new Size(0, 0);
+    const c = pr.addStack(); c.layoutVertically(); c.backgroundColor = C.cartao; c.cornerRadius = 9; c.setPadding(4, 8, 4, 8); c.size = new Size(0, 0);
     const lst = ab.filter(i => i.prom === p), crit = lst.filter(i => i.s.ord <= 3).length;
     txt(c, NOMES[p].toUpperCase(), 9, C[p], 'b');
     const n = c.addStack(); n.bottomAlignContent();
-    txt(n, String(lst.length), 18, C.tinta, 'mono');
+    txt(n, String(lst.length), 15, C.tinta, 'mono');
     if (crit) { n.addSpacer(4); txt(n, `${crit} já`, 10, C.laranja, 'm'); }
     const lida = ((r.cfg.leituras || {})[p + '_judicial']) && iso(new Date(r.cfg.leituras[p + '_judicial'])) === iso(hoje());
     txt(c, lida ? '✓ caixa lida' : '○ ler caixa', 9, lida ? C.verde : C.laranja);
     c.addSpacer();
     if (p !== 'guarabira') pr.addSpacer(0);
   }
-  w.addSpacer(8);
+  w.addSpacer(6);
 
   // lista
-  const MAX = 7;
+  const MAX = 5;
   if (!lista.length) {
     txt(w, 'Nada vencendo até o próximo dia útil.', 12, C.fraco);
   } else {
     for (const i of lista.slice(0, MAX)) {
       const row = w.addStack(); row.centerAlignContent(); row.spacing = 7;
-      const barra = row.addStack(); barra.size = new Size(4, 26); barra.cornerRadius = 2; barra.backgroundColor = COR_SIT[i.s.k];
+      const barra = row.addStack(); barra.size = new Size(4, 24); barra.cornerRadius = 2; barra.backgroundColor = COR_SIT[i.s.k];
       const meio = row.addStack(); meio.layoutVertically();
       const titulo = i.tipo === 'urgencia' ? `${TIPOS[i.urgTipo] || 'Urgência'}${i.processo ? ' · ' + i.processo : ''}`
         : `${NOMES[i.prom]} · ${i.processo || 'expediente'}`;
@@ -176,7 +176,7 @@ function montar(r, aviso) {
       txt(meio, det, 9.5, C.fraco);
       row.addSpacer();
       txt(row, i.s.txt, 10, COR_SIT[i.s.k], 'b');
-      w.addSpacer(4);
+      w.addSpacer(3);
     }
   }
   w.addSpacer();
@@ -245,7 +245,7 @@ const widget = leitura.erro ? telaErro(leitura.erro) : (() => {
   const salvo = leitura.j.salvoEm ? new Date(leitura.j.salvoEm) : null;
   const grande = config.widgetFamily === 'large';
   const w = grande ? montar(r, leitura.aviso) : montarMedio(r, leitura.aviso);
-  if (grande && salvo && !leitura.aviso) {
+  if (false) {
     const df = new DateFormatter(); df.dateFormat = 'dd/MM HH:mm';
     const t = w.addText('dados de ' + df.string(salvo)); t.font = Font.systemFont(8); t.textColor = C.fraco; t.rightAlignText();
   }
