@@ -264,7 +264,7 @@ details.more input{border:1px solid var(--line);border-radius:6px;padding:4px 8p
     if (p.meta === 'aposCiencia') {
       if (ci) m = addBusiness(ci, p.metaDias || 3, cfg);
     } else if (p.meta === 'ciencia' && (item.cienciaReal || (cfg._hoje && item.limiteCiencia && item.limiteCiencia < cfg._hoje))) {
-      if (pf) m = subBusiness(pf, 1, cfg); // ciência registrada ou tácita: meta 1 dia útil antes do prazo final
+      m = cfg._hoje ? fromISO(cfg._hoje) : ci; // ciência registrada ou expirada: entrega imediata
     } else if (p.meta === 'conclusao') {
       const base = fromISO(item.conclusao) || fromISO(item.expedicao);
       if (base) m = addBusiness(base, p.metaDias || 3, cfg);
@@ -843,7 +843,7 @@ function viewHoje(){
 function regraTxt(p){
   const c = state.cfg.promotorias[p];
   const cont = c.contagem==='uteis' ? 'dias úteis' : 'dias corridos, prorrogando para o próximo dia útil';
-  const meta = c.meta==='aposCiencia' ? `meta de ${c.metaDias} dia${c.metaDias>1?'s':''} út${c.metaDias>1?'eis':'il'} após a ciência` : c.meta==='conclusao' ? `meta de ${c.metaDias} dia${c.metaDias>1?'s':''} út${c.metaDias>1?'eis':'il'} após a conclusão` : c.meta==='ciencia' ? '1 dia útil antes da data limite de ciência (se a ciência já foi registrada, 1 dia útil antes do prazo final)' : `meta ${c.metaDias} dia${c.metaDias>1?'s':''} út${c.metaDias>1?'eis':'il'} antes do prazo final`;
+  const meta = c.meta==='aposCiencia' ? `meta de ${c.metaDias} dia${c.metaDias>1?'s':''} út${c.metaDias>1?'eis':'il'} após a ciência` : c.meta==='conclusao' ? `meta de ${c.metaDias} dia${c.metaDias>1?'s':''} út${c.metaDias>1?'eis':'il'} após a conclusão` : c.meta==='ciencia' ? '1 dia útil antes da data limite de ciência; se a ciência já expirou, entrega imediata' : `meta ${c.metaDias} dia${c.metaDias>1?'s':''} út${c.metaDias>1?'eis':'il'} antes do prazo final`;
   return `Quando o sistema informa a data limite de manifestação, ela é o prazo final; senão, conto em ${cont}, a partir do dia seguinte à ciência${c.dobro?' (em dobro)':''}. ${meta[0].toUpperCase()+meta.slice(1)}.`;
 }
 function pasteBox(p, kind){

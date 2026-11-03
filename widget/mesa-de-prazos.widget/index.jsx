@@ -54,7 +54,7 @@ function situacao(it, cfg) {
   if (pf && pf < h) return { k: 'vencido', txt: 'PRAZO VENCIDO', ord: 0 };
   if (!meta) return { k: 'sem', txt: 'sem data', ord: 9 };
   if (meta < h) { const d = Math.round((h - meta) / DIA); return { k: 'atrasado', txt: `meta passou há ${d}d`, ord: 1 }; }
-  if (+meta === +h) return { k: 'hoje', txt: 'ENTREGAR HOJE', ord: 2 };
+  if (+meta === +h) return { k: 'hoje', txt: it.prom === 'caapora' && it.limiteCiencia && fromISO(it.limiteCiencia) < h ? 'IMEDIATO' : 'ENTREGAR HOJE', ord: 2 };
   const du = diasUteisAte(meta, cfg);
   if (du <= 1) return { k: 'amanha', txt: 'próximo dia útil', ord: 3 };
   if (du <= 3) return { k: 'semana', txt: `em ${du} dias úteis`, ord: 4 };
