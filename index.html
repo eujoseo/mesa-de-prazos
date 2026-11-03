@@ -293,6 +293,7 @@ details.more input{border:1px solid var(--line);border-radius:6px;padding:4px 8p
   function metaInterna(item, cfg) {
     if (item.metaManual) return fromISO(item.metaManual);
     if (item.tipo === 'extra') return fromISO(item.vencimento);
+    if (item.tipo === 'tram30') return fromISO(cfg._hoje) || fromISO(item.criadoEm);
     const p = cfg.promotorias[item.prom] || {}, pf = prazoFinal(item, cfg);
     let m = null;
     const ci = fromISO(item.cienciaReal) || fromISO(item.limiteCiencia);
@@ -315,6 +316,7 @@ details.more input{border:1px solid var(--line);border-radius:6px;padding:4px 8p
   function recompute(item, cfg) {
     const pf = prazoFinal(item, cfg), mt = metaInterna(item, cfg);
     item.prazoFinal = pf ? iso(pf) : (item.tipo === 'extra' ? item.vencimento : null);
+    if (item.tipo === 'tram30') item.prazoFinal = null;
     item.meta = mt ? iso(mt) : null;
     return item;
   }
@@ -661,7 +663,7 @@ const PROMS = {
   caapora:{nome:'Caaporã', drive:'https://drive.google.com/drive/u/0/folders/1gZ-y614OwYkWQBiVGXvRjsKaLseRY_cT',
     fluxo:[['judiciais','Prazos judiciais'],['seeu','SEEU: baixar processos e atestado de pena (peça com o Neto)']]},
   guarabira:{nome:'Guarabira', drive:'https://drive.google.com/drive/u/0/folders/1L9pLI35aWBcYdcrJS6fYrrxX9SATH-qo',
-    fluxo:[['judiciais','Prazos judiciais (dígito par antes do hífen)'],['vencidos','Extrajudiciais vencidos'],['vincendos','Extrajudiciais vincendos (até 30 dias)'],['mais30','Extrajudiciais com mais de 30 dias'],['sentenca','Ciência de sentença: avisar o Dr. Alyrio se cabe recurso'],['revisao','Revisar minutas: só "Ministério Público", sem "Promotor(a)"']]}
+    fluxo:[['judiciais','Prazos judiciais (dígito par antes do hífen)'],['vencidos','Extrajudiciais vencidos'],['vincendos','Extrajudiciais vincendos (até 30 dias)'],['mais30','Extrajudiciais com mais de 30 dias'],['tram30','Tramitação há mais de 30 dias (prioridade): verificar e colar a lista'],['sentenca','Ciência de sentença: avisar o Dr. Alyrio se cabe recurso'],['revisao','Revisar minutas: só "Ministério Público", sem "Promotor(a)"']]}
 };
 
 /* Dicas e recomendações — extraídas dos documentos do Drive (GAECO e Guarabira, versão de 17/10/2026). */
@@ -1050,6 +1052,10 @@ function regraTxt(p){
 function pasteBox(p, kind){
   const id = 'paste_'+p+'_'+kind; const res = state.drafts[id];
   const ultima = state.cfg.leituras[p+'_'+kind];
+  if(kind==='tram30') return `<details class="panel paste" data-k="${id}" ${!pend(p).some(i=>i.tipo==='tram30')?'open':''}><summary><b>Colar procedimentos com tramitação há mais de 30 dias</b> <span class="small muted">${ultima?'última leitura '+new Date(ultima).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):'ainda não lida'}</span></summary>
+    <p class="small muted">Copie a lista do MP Virtual e cole aqui. Entram só os de último dígito <b>${state.cfg.paridade}</b>. Todos ficam como <b>prioridade para hoje</b> até você marcar como feito; os que saírem da lista ficam sinalizados.</p>
+    <textarea id="${id}" placeholder="Cole aqui a lista (números no formato 000.0000.000000)…"></textarea>
+    <div class="row" style="margin-top:8px"><button class="btn pri" data-read="${p}" data-kind="tram30">Ler lista</button></div>${res||''}</details>`;
   if(kind==='extra') return `<details class="panel paste" data-k="${id}" ${!pend(p).some(i=>i.tipo==='extra')?'open':''}><summary><b>Atualizar pela agenda do mês (PDF)</b> <span class="small muted">${ultima?'última leitura '+new Date(ultima).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}):''}</span></summary>
     <p class="small muted">Envie a agenda gerada no sistema. Entram só os do <b>${esc(state.cfg.cargoGuarabira)}</b>, com <b>Prazo legal de encerramento</b> e último dígito <b>${state.cfg.paridade}</b>.</p>
     <div class="row"><input type="file" id="pdf_${p}" accept="application/pdf"> <span class="small muted">ou cole o texto do PDF abaixo</span></div>
@@ -1071,10 +1077,11 @@ function viewProm(p){
     <div class="prog" style="margin-top:8px"><strong>${v}%</strong><div class="bar ${v===100&&all?'ok':''}"><i style="width:${v}%"></i></div></div></section>`;
   if(p==='guarabira'){
     const sub = state.sub.guarabira;
-    const jud = pend(p).filter(i=>i.tipo!=='extra' && i.tipo!=='urgencia'), ext = pend(p).filter(i=>i.tipo==='extra');
+    const t30 = pend(p).filter(i=>i.tipo==='tram30'); const jud = pend(p).filter(i=>i.tipo!=='extra' && i.tipo!=='urgencia' && i.tipo!=='tram30'), ext = pend(p).filter(i=>i.tipo==='extra');
     const fx = k => ext.filter(i=>P.faixaExtra(i,today())===k);
-    body = `<div class="subtabs"><button data-sub="judiciais" aria-pressed="${sub==='judiciais'}">Judiciais · ${jud.length}</button><button data-sub="extra" aria-pressed="${sub==='extra'}">Extrajudiciais (pares) · ${ext.length}</button></div>`;
-    if(sub==='judiciais') body += pasteBox(p,'judicial') + (jud.length?grouped(jud):`<div class="empty" style="margin-top:12px">Nenhum expediente judicial pendente.</div>`);
+    body = `<div class="subtabs"><button data-sub="judiciais" aria-pressed="${sub==='judiciais'}">Judiciais · ${jud.length}</button><button data-sub="extra" aria-pressed="${sub==='extra'}">Extrajudiciais (pares) · ${ext.length}</button><button data-sub="tram30" aria-pressed="${sub==='tram30'}">Tramitação +30 dias · ${t30.length}</button></div>`;
+    if(sub==='tram30') body += pasteBox(p,'tram30') + (t30.length?`<div class="list" style="margin-top:12px">${t30.sort((a,b)=>(b.dias||0)-(a.dias||0)).map(i=>itemCard(i)).join('')}</div>`:`<div class="empty" style="margin-top:12px">Nenhum procedimento com tramitação há mais de 30 dias. Cole a lista acima.</div>`);
+    else if(sub==='judiciais') body += pasteBox(p,'judicial') + (jud.length?grouped(jud):`<div class="empty" style="margin-top:12px">Nenhum expediente judicial pendente.</div>`);
     else {
       const e = state.sub.extra; const labels = {vencidos:'Vencidos',vincendos:'Vincendos (até 30 dias)',mais30:'+ de 30 dias'};
       const lst = fx(e).sort((a,b)=>(a.vencimento||'').localeCompare(b.vencimento||''));
@@ -1091,9 +1098,11 @@ function viewProm(p){
 }
 function itemCard(i, showProm, why){
   const u = urg(i); const prog = i.progresso||0;
-  const ausente = i.vistoEm && state.cfg.leituras[i.prom+'_'+(i.tipo==='extra'?'extra':'judicial')] > i.vistoEm;
-  const isExtra = i.tipo==='extra';
-  const dates = isExtra
+  const ausente = i.vistoEm && state.cfg.leituras[i.prom+'_'+(i.tipo==='extra'?'extra':i.tipo==='tram30'?'tram30':'judicial')] > i.vistoEm;
+  const isExtra = i.tipo==='extra', isT30 = i.tipo==='tram30';
+  const dates = isT30
+    ? `<div><span class="lbl">Tramitação desde</span><b>${brI(i.desde)}</b></div><div class="bad"><span class="lbl">Parado há</span><b>${i.dias!=null?i.dias+' dias':'+30 dias'}</b></div><div class="bad"><span class="lbl">Prioridade</span><b>hoje</b></div>`
+    : isExtra
     ? `<div><span class="lbl">Instaurado</span><b>${brI(i.inicio)}</b></div><div class="${u.ord<=1?'bad':'hl'}"><span class="lbl">Encerramento legal</span><b>${brI(i.vencimento)} <span class="small muted">${rel(i.vencimento)}</span></b></div>`
     : `<div><span class="lbl">Expedição</span><b>${brI(i.expedicao)}</b></div>${i.cienciaReal?`<div><span class="lbl">Ciência registrada</span><b>${brI(i.cienciaReal)}</b></div>`:`<div><span class="lbl">Limite ciência</span><b>${brI(i.limiteCiencia)} <span class="small muted">${rel(i.limiteCiencia)}</span></b></div>`}<div><span class="lbl">Prazo</span><b>${i.prazoDias?i.prazoDias+' dias':'sem prazo'}</b></div><div class="${u.key==='vencido'?'bad':''}"><span class="lbl">Prazo final</span><b>${brI(i.prazoFinal)} <span class="small muted">${dow(i.prazoFinal)}</span></b></div><div class="${u.ord<=1?'bad':'hl'}"><span class="lbl">Minha meta</span><b>${brI(i.meta)} <span class="small muted">${rel(i.meta)}</span></b></div>`;
   return `<article class="item u-${u.key}" data-id="${esc(i.id)}">
@@ -1108,7 +1117,7 @@ function itemCard(i, showProm, why){
    <div class="ctrl"><span class="lbl">Feitura</span><div class="seg" role="group">${[0,25,50,75,100].map(v=>`<button data-prog="${v}" aria-pressed="${prog===v}">${v}%</button>`).join('')}</div>
      <input type="text" id="nota_${esc(i.id)}" data-nota value="${esc(i.notas||'')}" placeholder="Anotação (ex.: minuta no Drive, falta laudo)">
      <button class="btn sm pri" data-done>Marcar feito</button></div>
-   ${isExtra?'':`<details class="more" data-k="m_${esc(i.id)}"><summary>Ajustar datas</summary><div class="in">
+   ${isExtra||isT30?'':`<details class="more" data-k="m_${esc(i.id)}"><summary>Ajustar datas</summary><div class="in">
      <label>Ciência dada em <input type="date" data-f="cienciaReal" value="${i.cienciaReal||''}"></label>
      <label>Meta manual <input type="date" data-f="metaManual" value="${i.metaManual||''}"></label>
      <label>Prazo em dias <input type="number" min="0" data-f="prazoDiasOrig" value="${i.prazoDiasOrig||''}"></label>
@@ -1192,6 +1201,32 @@ async function textoDoPdf(file){
   for(let n=1;n<=pdf.numPages;n++){ const pg = await pdf.getPage(n); const tc = await pg.getTextContent(); pages.push(tc.items.map(it=>({str:it.str, x:it.transform[4], y:it.transform[5]}))); }
   return P.agendaDePosicoes(pages);
 }
+
+async function lerTram30(p){
+  const id='paste_'+p+'_tram30'; const ta=document.getElementById(id); const txt=(ta||{}).value||'';
+  const dup = txt.trim() ? jaColado(p+'_tram30', txt) : {};
+  if(dup.quando){ state.drafts[id]=avisoDup(dup.quando); ta.value=''; render(); toast('Esse já foi copiado — nada foi alterado'); return; }
+  const RX=/\d{3}\.\d{4}\.\d{6}/g; const ms=[...txt.matchAll(RX)];
+  if(!ms.length){ state.drafts[id]=`<div class="note warn" style="margin-top:10px">Não encontrei números de procedimento (000.0000.000000) no texto.</div>`; render(); return; }
+  const vistos=new Map();
+  ms.forEach((m,k)=>{ const num=m[0]; if(vistos.has(num)) return; const fim = k+1<ms.length ? ms[k+1].index : txt.length; const trecho = txt.slice(m.index+num.length, fim).replace(/\s+/g,' ').trim();
+    const dt = /(\d{2}\/\d{2}\/\d{4})/.exec(trecho); const dd = /(\d+)\s*dias?/i.exec(trecho);
+    vistos.set(num,{num, desc:trecho.replace(/\d{2}\/\d{2}\/\d{4}(\s+\d{2}:\d{2}(:\d{2})?)?/g,'').replace(/\s+/g,' ').trim().slice(0,160), desde: dt?P.iso(P.fromBR(dt[1])):null, dias: dd?+dd[1]:null}); });
+  const par = state.cfg.paridade==='par'; const agora=Date.now(); let novos=0, atual=0, outros=0; const jaFeitos=[];
+  for(const x of vistos.values()){
+    if((P.ultimoDigito(x.num)%2===0)!==par){ outros++; continue; }
+    const docId='t-'+x.num.replace(/\./g,'_'); const old=state.itens.get(docId);
+    let dias = x.dias; if(dias==null && x.desde) dias = P.diffDays(P.fromISO(x.desde), today());
+    const it=Object.assign({}, old||{status:'pendente',progresso:0,notas:'',criadoEm:P.iso(today())}, {id:docId, prom:p, tipo:'tram30', processo:x.num, classe:x.desc||'Tramitação há mais de 30 dias', desde:x.desde, dias, vistoEm:agora, flags:['Tramitação +30 dias']});
+    if(old && old.status==='feito'){ it.aindaNaCaixa=agora; jaFeitos.push(it); }
+    calc(it); old?atual++:novos++; await store.putItem(it);
+  }
+  state.cfg.leituras[p+'_tram30']=agora; await registrarColagem(p+'_tram30', dup.h); await store.putCfg();
+  const sumiram = pend(p).filter(i=>i.tipo==='tram30' && i.vistoEm<agora);
+  state.drafts[id]=`<div class="note" style="margin-top:10px">Li <b>${vistos.size}</b> procedimento${vistos.size>1?'s':''}: ${novos} novo${novos!==1?'s':''}, ${atual} atualizado${atual!==1?'s':''}${outros?`, ${outros} de final ${par?'ímpar':'par'} (Ana Paula) ignorado${outros>1?'s':''}`:''}.${sumiram.length?` <b>${sumiram.length} não ${sumiram.length>1?'estão':'está'} mais na lista</b> — se já ${sumiram.length>1?'foram tramitados':'foi tramitado'}, marque como feito.`:''}</div>
+   ${jaFeitos.length?`<div class="note warn"><b>Atenção:</b> ${jaFeitos.map(i=>esc(i.processo)).join('; ')} já ${jaFeitos.length>1?'estavam':'estava'} como feito e continua${jaFeitos.length>1?'m':''} na lista. Continua${jaFeitos.length>1?'m':''} como feito — use "Reabrir" na aba Feitos se ainda não ${jaFeitos.length>1?'foram tramitados':'foi tramitado'}.</div>`:''}`;
+  if(ta) ta.value=''; render(); toast('Lista lida');
+}
 async function lerAgenda(p){
   const id='paste_'+p+'_extra'; const fi=document.getElementById('pdf_'+p); let txt=(document.getElementById(id)||{}).value||'';
   try{ if(fi && fi.files && fi.files[0]){ if(!window.pdfjsLib) throw new Error('leitor de PDF não carregou'); txt = await textoDoPdf(fi.files[0]); } }
@@ -1219,7 +1254,7 @@ document.addEventListener('click', async e=>{
   if(t.dataset.tab){ state.tab=t.dataset.tab; try{localStorage.setItem('mp_tab',state.tab);}catch(_){} render(); return; }
   if(t.dataset.sub){ state.sub.guarabira=t.dataset.sub; render(); return; }
   if(t.dataset.extra){ state.sub.extra=t.dataset.extra; render(); return; }
-  if(t.dataset.read){ t.disabled=true; t.textContent='Lendo…'; try{ t.dataset.kind==='extra' ? await lerAgenda(t.dataset.read) : await lerCaixa(t.dataset.read); }catch(err){ toast('Erro ao salvar: '+(err&&err.code||err.message||'tente de novo')); render(); } return; }
+  if(t.dataset.read){ t.disabled=true; t.textContent='Lendo…'; try{ t.dataset.kind==='extra' ? await lerAgenda(t.dataset.read) : t.dataset.kind==='tram30' ? await lerTram30(t.dataset.read) : await lerCaixa(t.dataset.read); }catch(err){ toast('Erro ao salvar: '+(err&&err.code||err.message||'tente de novo')); render(); } return; }
   if(t.dataset.incl){ await incluir(JSON.parse(t.dataset.incl)); return; }
   if(t.hasAttribute('data-note-pin')||t.hasAttribute('data-note-del')){ const id=t.closest('[data-nota-id]').dataset.notaId; const n=state.notas.get(id); if(!n) return;
     if(t.hasAttribute('data-note-pin')){ await store.putNota(Object.assign({},n,{fixado:!n.fixado})); render(); toast(n.fixado?'Lembrete desafixado':'Fixado na aba Hoje'); return; }

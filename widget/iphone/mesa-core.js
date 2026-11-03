@@ -30,7 +30,7 @@ const C = {
 };
 const NOMES = { gaeco: 'GAECO', caapora: 'Caaporã', guarabira: 'Guarabira' };
 const TIPOS = { relatorio: 'Relatório de audiência', pga: 'PGA de audiência', pgaout: 'PGA', outra: 'Urgência' };
-const CHECK_TOTAL = { gaeco: 6, caapora: 2, guarabira: 6 };
+const CHECK_TOTAL = { gaeco: 6, caapora: 2, guarabira: 7 };
 
 // ---------- datas ----------
 const DIA = 864e5;
