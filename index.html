@@ -270,7 +270,7 @@ details.more input{border:1px solid var(--line);border-radius:6px;padding:4px 8p
       if (base) m = addBusiness(base, p.metaDias || 3, cfg);
     } else if (p.meta === 'ciencia') {
       m = fromISO(item.limiteCiencia);
-      if (m && !isBusiness(m, cfg)) m = subBusiness(m, 1, cfg);
+      if (m) m = subBusiness(m, p.metaDias || 1, cfg); // antes da ciência: 1 dia útil antes do limite de ciência
     } else if (pf) {
       m = subBusiness(pf, p.metaDias || 1, cfg);
     }
@@ -630,12 +630,12 @@ const PROMS = {
 };
 const DEFAULT_CFG = {
   promotorias:{
-    gaeco:{contagem:'corridos', meta:'aposCiencia', metaDias:3, dobro:false},
+    gaeco:{contagem:'corridos', meta:'prazo', metaDias:4, dobro:false},
     caapora:{contagem:'uteis', meta:'ciencia', metaDias:1, dobro:false, soCivel:true, conclusor:'JOSE OLIVEIRA', conclusorAte:'2026-10-31'},
     guarabira:{contagem:'uteis', meta:'prazo', metaDias:1, dobro:false}
   },
   feriadosExtras:['30/10/2026','08/12/2026'], recessoUteis:true,
-  cargoGuarabira:'4º Promotor', paridade:'par', leituras:{}
+  cargoGuarabira:'4º Promotor', paridade:'par', leituras:{}, regrasV:3
 };
 const $ = s => document.querySelector(s);
 const esc = s => String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -672,7 +672,7 @@ function applySnapshot(j){
 }
 window.MesaApp = { snapshot, aplicar(j, salvar){ applySnapshot(j); try{ localStorage.setItem('mp_local', JSON.stringify(Object.assign({}, j))); }catch(e){} if(salvar) saveLocal(); render(); }, render:()=>render() };
 function loadLocal(){ try{ const j = JSON.parse(localStorage.getItem('mp_local')||'null'); if(j) applySnapshot(j); }catch(e){} }
-function mergeCfg(c){ const d = JSON.parse(JSON.stringify(DEFAULT_CFG)); const out = Object.assign(d, c||{}); out.promotorias = Object.assign({}, DEFAULT_CFG.promotorias); for(const k in DEFAULT_CFG.promotorias) out.promotorias[k] = Object.assign({}, DEFAULT_CFG.promotorias[k], (c&&c.promotorias&&c.promotorias[k])||{}); out.leituras = (c&&c.leituras)||{}; return out; }
+function mergeCfg(c){ const d = JSON.parse(JSON.stringify(DEFAULT_CFG)); const out = Object.assign(d, c||{}); out.promotorias = Object.assign({}, DEFAULT_CFG.promotorias); for(const k in DEFAULT_CFG.promotorias) out.promotorias[k] = Object.assign({}, DEFAULT_CFG.promotorias[k], (c&&c.promotorias&&c.promotorias[k])||{}); out.leituras = (c&&c.leituras)||{}; if((out.regrasV||0) < 3){ for(const k of ['gaeco','caapora','guarabira']){ out.promotorias[k].meta = DEFAULT_CFG.promotorias[k].meta; out.promotorias[k].metaDias = DEFAULT_CFG.promotorias[k].metaDias; } out.regrasV = 3; } return out; }
 function cfgCalc(){ const c = clean(state.cfg); c._hoje = P.iso(today()); return c; }
 function calc(it){ const c = cfgCalc(); const it2 = Object.assign({}, it); if(it2.tipo!=='extra' && it2.prazoDiasOrig!=null){ const dob = c.promotorias[it2.prom] && c.promotorias[it2.prom].dobro; it2.prazoDias = it2.prazoDiasOrig*(dob?2:1); } P.recompute(it2,c); it.prazoFinal = it2.prazoFinal; it.meta = it2.meta; it.prazoDias = it2.prazoDias; return it; }
 
@@ -843,7 +843,7 @@ function viewHoje(){
 function regraTxt(p){
   const c = state.cfg.promotorias[p];
   const cont = c.contagem==='uteis' ? 'dias úteis' : 'dias corridos, prorrogando para o próximo dia útil';
-  const meta = c.meta==='aposCiencia' ? `meta de ${c.metaDias} dia${c.metaDias>1?'s':''} út${c.metaDias>1?'eis':'il'} após a ciência` : c.meta==='conclusao' ? `meta de ${c.metaDias} dia${c.metaDias>1?'s':''} út${c.metaDias>1?'eis':'il'} após a conclusão` : c.meta==='ciencia' ? 'fazer antes da data limite de ciência (se a ciência já foi registrada, 1 dia útil antes do prazo final)' : `meta ${c.metaDias} dia${c.metaDias>1?'s':''} út${c.metaDias>1?'eis':'il'} antes do prazo final`;
+  const meta = c.meta==='aposCiencia' ? `meta de ${c.metaDias} dia${c.metaDias>1?'s':''} út${c.metaDias>1?'eis':'il'} após a ciência` : c.meta==='conclusao' ? `meta de ${c.metaDias} dia${c.metaDias>1?'s':''} út${c.metaDias>1?'eis':'il'} após a conclusão` : c.meta==='ciencia' ? '1 dia útil antes da data limite de ciência (se a ciência já foi registrada, 1 dia útil antes do prazo final)' : `meta ${c.metaDias} dia${c.metaDias>1?'s':''} út${c.metaDias>1?'eis':'il'} antes do prazo final`;
   return `Quando o sistema informa a data limite de manifestação, ela é o prazo final; senão, conto em ${cont}, a partir do dia seguinte à ciência${c.dobro?' (em dobro)':''}. ${meta[0].toUpperCase()+meta.slice(1)}.`;
 }
 function pasteBox(p, kind){
