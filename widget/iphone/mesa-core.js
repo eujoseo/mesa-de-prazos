@@ -1,4 +1,4 @@
-// Mesa de Prazos — widget grande para iPhone (app Scriptable)
+// Mesa de Prazos — widget médio para iPhone (app Scriptable)
 // Lê o arquivo mesa-de-prazos.json que a Mesa grava no seu Google Drive.
 //
 // Núcleo do widget: é baixado e executado pelo script curto "Mesa de Prazos" no Scriptable.
@@ -8,7 +8,7 @@
 // 3. No Scriptable: Ajustes (engrenagem) › File Bookmarks › + › Pick File › escolha mesa-de-prazos.json
 //    e dê o nome exatamente: Mesa
 // 4. Crie um script novo no Scriptable, cole este código e rode uma vez (▶) para testar.
-// 5. Na tela de início: segure › + › Scriptable › tamanho GRANDE › toque no widget › Script: este.
+// 5. Na tela de início: segure › + › Scriptable › tamanho MÉDIO › toque no widget › Script: este.
 
 const BOOKMARK = 'Mesa';
 const SITE = 'https://eujoseo.github.io/mesa-de-prazos/';
@@ -188,6 +188,48 @@ function montar(r, aviso) {
   rod.addSpacer();
   return w;
 }
+
+function montarMedio(r, aviso) {
+  const w = new ListWidget(); w.backgroundColor = C.fundo; w.setPadding(11, 13, 10, 13); w.url = SITE;
+  const { ab, pend, obs, lista } = r;
+  const cor = pend.length ? C.vermelho : obs.length ? C.laranja : C.verde;
+  // topo: título + situação
+  const topo = w.addStack(); topo.centerAlignContent();
+  txt(topo, 'Mesa de Prazos', 13, C.tinta, 'b'); topo.addSpacer();
+  txt(topo, pend.length ? `● ${pend.length} pendência${pend.length > 1 ? 's' : ''}` : obs.length ? '● Em dia · observar' : '● Tudo em dia', 11, cor, 'b');
+  w.addSpacer(2);
+  const resumo = pend.length ? pend.join(' · ') : obs.length ? obs.join(' · ') : 'Nada atrasado nem para hoje.';
+  txt(w, resumo, 9.5, pend.length ? C.tinta : C.fraco);
+  w.addSpacer(5);
+  // promotorias numa linha
+  const pr = w.addStack(); pr.spacing = 5;
+  for (const p of ['gaeco', 'caapora', 'guarabira']) {
+    const c = pr.addStack(); c.backgroundColor = C.cartao; c.cornerRadius = 7; c.setPadding(3, 6, 3, 6); c.centerAlignContent(); c.spacing = 4;
+    const lst = ab.filter(i => i.prom === p), crit = lst.filter(i => i.s.ord <= 3).length;
+    const l = (r.cfg.leituras || {})[p + '_judicial']; const lida = l && iso(new Date(l)) === iso(hoje());
+    txt(c, NOMES[p], 9, C[p], 'b');
+    txt(c, String(lst.length) + (crit ? ` (${crit} já)` : ''), 9.5, crit ? C.laranja : C.tinta, 'm');
+    txt(c, lida ? '✓' : '○', 9, lida ? C.verde : C.laranja, 'b');
+  }
+  w.addSpacer(5);
+  // até 3 itens
+  const MAX = 3;
+  if (!lista.length) txt(w, 'Nada vencendo até o próximo dia útil.', 10.5, C.fraco);
+  for (const i of lista.slice(0, MAX)) {
+    const row = w.addStack(); row.centerAlignContent(); row.spacing = 6;
+    const barra = row.addStack(); barra.size = new Size(3, 14); barra.cornerRadius = 1.5; barra.backgroundColor = COR_SIT[i.s.k];
+    const preso = (i.flags || []).some(f => /preso/i.test(f));
+    const titulo = i.tipo === 'urgencia' ? `${TIPOS[i.urgTipo] || 'Urgência'}${i.processo ? ' · ' + i.processo : ''}` : `${NOMES[i.prom]} · ${i.processo || 'expediente'}`;
+    txt(row, (preso ? '⚠︎ ' : '') + titulo, 10.5, i.tipo === 'urgencia' ? C.vermelho : C.tinta, 'm');
+    row.addSpacer();
+    txt(row, i.s.txt, 9.5, COR_SIT[i.s.k], 'b');
+    w.addSpacer(2);
+  }
+  w.addSpacer();
+  const rod = w.addStack();
+  txt(rod, aviso ? '⚠︎ ' + aviso : (lista.length > MAX ? `+${lista.length - MAX} na fila · ` : '') + `${ab.length} em aberto`, 8.5, aviso ? C.laranja : C.fraco);
+  return w;
+}
 function telaErro(msg) {
   const w = new ListWidget(); w.backgroundColor = C.fundo; w.setPadding(16, 16, 16, 16); w.url = SITE;
   txt(w, 'Mesa de Prazos', 15, C.tinta, 'b'); w.addSpacer(8);
@@ -201,14 +243,15 @@ const leitura = await lerMesa();
 const widget = leitura.erro ? telaErro(leitura.erro) : (() => {
   const r = analisar(leitura.j);
   const salvo = leitura.j.salvoEm ? new Date(leitura.j.salvoEm) : null;
-  const w = montar(r, leitura.aviso);
-  if (salvo && !leitura.aviso) {
+  const grande = config.widgetFamily === 'large';
+  const w = grande ? montar(r, leitura.aviso) : montarMedio(r, leitura.aviso);
+  if (grande && salvo && !leitura.aviso) {
     const df = new DateFormatter(); df.dateFormat = 'dd/MM HH:mm';
     const t = w.addText('dados de ' + df.string(salvo)); t.font = Font.systemFont(8); t.textColor = C.fraco; t.rightAlignText();
   }
   return w;
 })();
 const prox = new Date(); prox.setMinutes(prox.getMinutes() + 15); widget.refreshAfterDate = prox;
-if (config.runsInWidget) Script.setWidget(widget); else await widget.presentLarge();
+if (config.runsInWidget) Script.setWidget(widget); else await widget.presentMedium();
 Script.complete();
 };
