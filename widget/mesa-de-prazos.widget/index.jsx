@@ -7,11 +7,16 @@ export const refreshFrequency = 5 * 60 * 1000; // a cada 5 minutos
 export const command = `
 F=""
 for d in "$HOME"/Library/CloudStorage/GoogleDrive-*; do
-  [ -d "$d" ] || continue
-  F=$(find "$d" -maxdepth 5 -name 'mesa-de-prazos.json' -print 2>/dev/null | head -n 1)
-  [ -n "$F" ] && break
+  for sub in "Meu Drive" "My Drive" "Mi unidad"; do
+    [ -f "$d/$sub/mesa-de-prazos.json" ] && { F="$d/$sub/mesa-de-prazos.json"; break 2; }
+  done
 done
-if [ -z "$F" ]; then echo '{"erro":"nao-achei"}'; else cat "$F"; fi
+if [ -z "$F" ]; then
+  D=$(ls -d "$HOME"/Library/CloudStorage/GoogleDrive-* 2>/dev/null | head -n 1)
+  if [ -z "$D" ]; then echo '{"erro":"sem-drive"}'; else echo '{"erro":"nao-achei"}'; fi
+else
+  cat "$F" 2>/dev/null || echo '{"erro":"sem-permissao"}'
+fi
 `;
 
 // ---------- datas ----------
@@ -68,7 +73,7 @@ function lidaHoje(cfg, chave) {
 
 // ---------- visual ----------
 export const className = `
-  top: 28px; right: 24px; width: 380px;
+  top: 40px; left: 24px; width: 380px;
   font-family: -apple-system, "SF Pro Text", Helvetica, sans-serif;
   color: #f4f1ea; font-size: 12px; line-height: 1.35;
   background: rgba(24, 22, 20, 0.78);
@@ -103,11 +108,17 @@ export const className = `
 
 export const render = ({ output, error }) => {
   if (error) return <div className="erro">Erro ao ler a Mesa: {String(error)}</div>;
-  let j; try { j = JSON.parse(output); } catch (e) { return <div className="erro">Aguardando a Mesa de Prazos…</div>; }
+  if (output === undefined || output === null) return <div className="sub">Carregando a Mesa de Prazos…</div>;
+  let j; try { j = JSON.parse(output); } catch (e) { return <div className="erro">Não consegui ler a Mesa: {String(output).slice(0, 140) || 'resposta vazia'}</div>; }
+  const MSG = {
+    'sem-drive': 'O Google Drive para computador não está instalado ou não está aberto neste Mac.',
+    'nao-achei': 'Não achei mesa-de-prazos.json em "Meu Drive". Conecte a Mesa ao Drive (Ajustes › Backup e Google Drive) e deixe o arquivo na raiz do Meu Drive.',
+    'sem-permissao': 'O macOS bloqueou o acesso ao Google Drive. Libere em Ajustes do Sistema › Privacidade e Segurança › Arquivos e Pastas › Übersicht.'
+  };
   if (j.erro) return (
     <div>
       <h1>Mesa de Prazos</h1>
-      <div className="erro" style={{ marginTop: 6 }}>Não achei o arquivo <b>mesa-de-prazos.json</b>. Confira se o Google Drive para computador está aberto e se a Mesa está conectada ao Drive.</div>
+      <div className="erro" style={{ marginTop: 6 }}>{MSG[j.erro] || j.erro}</div>
     </div>
   );
 
