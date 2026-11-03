@@ -821,7 +821,7 @@ function motivo(i,u){
     let base='';
     if(c.meta==='ciencia' && !i.cienciaReal) base = `Em ${PROMS[i.prom].nome} a manifestação sai antes da ciência, que expira em ${d(i.limiteCiencia)}`;
     else if(c.meta==='aposCiencia') base = `Sua regra é juntar até o ${c.metaDias}º dia útil após a ciência (${brI(i.cienciaReal||i.limiteCiencia)}), ou seja, até ${d(i.meta)}`;
-    else if(c.meta==='ciencia') base = `A ciência já foi registrada em ${brI(i.cienciaReal)}; a meta é 1 dia útil antes do prazo final`;
+    else if(c.meta==='ciencia') base = `A ciência já foi registrada em ${brI(i.cienciaReal)}; a entrega é imediata`;
     else base = `A meta é ${c.metaDias} dia${c.metaDias>1?'s':''} út${c.metaDias>1?'eis':'il'} antes do prazo final`;
     const quando = u.key==='atrasado' ? `A meta passou ${rel(i.meta)}` : u.key==='hoje' ? 'A meta é hoje' : `A meta é ${d(i.meta)}`;
     out.push(`${quando}. ${base}. Prazo final: ${d(i.prazoFinal)}${pfU!=null?`, ${pfU===0?'hoje':pfU===1?'falta 1 dia útil':'faltam '+pfU+' dias úteis'}`:''}.`);
