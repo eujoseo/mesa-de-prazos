@@ -181,6 +181,51 @@ details.more input{border:1px solid var(--line);border-radius:6px;padding:4px 8p
 .tmr.out .clock{color:var(--danger)}
 .tmr .row .btn{flex:1}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+/* situação do dia */
+.situ{border-radius:12px;padding:14px 16px;margin-bottom:18px;display:grid;gap:10px;border:1px solid var(--line);background:var(--surface)}
+.situ.ok{background:var(--ok-soft);border-color:color-mix(in srgb,var(--ok) 35%,transparent)}
+.situ.pend{background:var(--danger-soft);border-color:color-mix(in srgb,var(--danger) 30%,transparent)}
+.situ.obs{background:var(--warn-soft);border-color:color-mix(in srgb,var(--warn) 30%,transparent)}
+.situ .sh{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}
+.situ .big{font-family:var(--f-display);font-weight:650;font-size:1.2rem}
+.situ.ok .big{color:var(--ok)} .situ.pend .big{color:var(--danger)} .situ.obs .big{color:var(--warn)}
+.situ ul{margin:0;padding:0;list-style:none;display:grid;gap:4px;font-size:.9rem}
+.situ li{display:flex;gap:8px;align-items:baseline}
+.situ li b{font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;min-width:6.5em}
+.situ li.p b{color:var(--danger)} .situ li.o b{color:var(--warn)}
+/* comemoração */
+.celebra{position:fixed;inset:0;z-index:40;display:grid;place-items:center;background:color-mix(in srgb,var(--bg) 72%,transparent);backdrop-filter:blur(3px);animation:fadein .3s ease}
+.celebra .card{background:var(--surface);border:2px solid var(--ok);border-radius:18px;padding:30px 28px;text-align:center;max-width:min(520px,calc(100% - 32px));box-shadow:0 20px 60px rgba(0,0,0,.18);animation:pop .55s cubic-bezier(.2,1.4,.4,1)}
+.celebra h2{font-size:clamp(1.5rem,5vw,2.2rem);color:var(--ok);letter-spacing:.02em;line-height:1.15}
+.celebra p{margin:.6em 0 1.2em;color:var(--muted)}
+.celebra .check{width:76px;height:76px;margin:0 auto 12px;border-radius:50%;background:var(--ok);display:grid;place-items:center}
+.celebra .check svg{width:40px;height:40px;stroke:var(--surface);stroke-width:4;fill:none;stroke-dasharray:60;stroke-dashoffset:60;animation:draw .6s .35s ease forwards}
+.confete{position:fixed;top:-12px;width:9px;height:14px;border-radius:2px;z-index:41;pointer-events:none;animation:cai linear forwards}
+@keyframes fadein{from{opacity:0}} @keyframes pop{from{transform:scale(.6);opacity:0}} @keyframes draw{to{stroke-dashoffset:0}}
+@keyframes cai{to{transform:translateY(105vh) rotate(720deg)}}
+/* urgências */
+.urg{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--danger);border-radius:var(--r);padding:14px;display:grid;gap:10px}
+.urg h3{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.urg form{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;align-items:end}
+.urg form label{display:grid;gap:2px;font-size:.78rem;color:var(--muted)}
+.urg form input,.urg form select{border:1px solid var(--line);border-radius:6px;padding:6px 8px;background:var(--surface);color:var(--ink);width:100%}
+.urg form .wide{grid-column:1/-1}
+.uck{display:grid;gap:4px;padding:8px 10px;background:var(--sunk);border-radius:6px;font-size:.86rem}
+.uck label{display:flex;gap:8px;align-items:flex-start;cursor:pointer}
+.uck input{margin-top:3px;accent-color:var(--accent)}
+.uck .done span{text-decoration:line-through;color:var(--muted)}
+/* dicas */
+.dicas{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px}
+.dicas details{border-top:1px solid var(--line);padding:6px 0}
+.dicas details:first-of-type{border-top:0}
+.dicas summary{cursor:pointer;font-weight:600;font-size:.9rem}
+.dicas ul{margin:6px 0 2px;padding-left:18px;display:grid;gap:6px;font-size:.86rem}
+.dicas li b{color:var(--ink)}
+.dicas .src{color:var(--muted);font-size:.76rem}
+.dicas input{width:100%;border:1px solid var(--line);border-radius:6px;padding:5px 9px;background:var(--surface);margin:6px 0 4px;font-size:.86rem}
+.dup{display:grid;gap:4px;padding:12px;border-radius:8px;background:var(--warn-soft);color:var(--warn);font-weight:700;margin-top:10px}
+.dup span{color:var(--ink);font-weight:400;font-size:.88rem}
+@media (prefers-reduced-motion:reduce){.celebra,.celebra .card,.confete{animation:none!important}.celebra .check svg{stroke-dashoffset:0}}
 </style>
 </head>
 <body>
@@ -195,12 +240,14 @@ details.more input{border:1px solid var(--line);border-radius:6px;padding:4px 8p
     </div>
     <div class="dayboard" id="dayboard"></div>
   </header>
+  <section class="situ" id="situ" aria-live="polite" aria-label="Situação do dia"></section>
   <section class="jornada" id="jornada" aria-label="Jornada de hoje"></section>
   <nav class="tabs" role="tablist" id="tabs"></nav>
   <main id="view"></main>
   <p class="status" id="status"></p>
 </div>
 <div class="toast" id="toast" hidden></div>
+<div id="celebra-root"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
@@ -622,12 +669,99 @@ details.more input{border:1px solid var(--line);border-radius:6px;padding:4px 8p
 const P = window.Prazos;
 const PROMS = {
   gaeco:{nome:'GAECO', drive:'https://drive.google.com/drive/u/0/folders/1BVs-9UFGDenufzoUuZ8Zc-TBPn_lrWUB',
-    fluxo:[['prazos','Ver prazos'],['analise','Análise prévia de processos (evitar surpresas)']]},
+    fluxo:[['prazos','Ver prazos (réus presos primeiro)'],['analise','Análise prévia: abrir os autos principais antes de a ciência expirar'],['relat','Relatórios de audiência: conferir os que vencem (4 dias antes)'],['zap','Minuta enviada: avisar o gestor no WhatsApp (minuta + prazo)'],['nome','Salvar peças no Drive e na VPN no padrão TIPO; CASO; OBJETO; Nº'],['cobra','Dúvida sem resposta ontem? Lembrar o Dr. Daniel hoje']]},
   caapora:{nome:'Caaporã', drive:'https://drive.google.com/drive/u/0/folders/1gZ-y614OwYkWQBiVGXvRjsKaLseRY_cT',
     fluxo:[['judiciais','Prazos judiciais'],['seeu','SEEU: baixar processos e atestado de pena (peça com o Neto)']]},
   guarabira:{nome:'Guarabira', drive:'https://drive.google.com/drive/u/0/folders/1L9pLI35aWBcYdcrJS6fYrrxX9SATH-qo',
-    fluxo:[['judiciais','Prazos judiciais (dígito par antes do hífen)'],['vencidos','Extrajudiciais vencidos'],['vincendos','Extrajudiciais vincendos (até 30 dias)'],['mais30','Extrajudiciais com mais de 30 dias']]}
+    fluxo:[['judiciais','Prazos judiciais (dígito par antes do hífen)'],['vencidos','Extrajudiciais vencidos'],['vincendos','Extrajudiciais vincendos (até 30 dias)'],['mais30','Extrajudiciais com mais de 30 dias'],['sentenca','Ciência de sentença: avisar o Dr. Alyrio se cabe recurso'],['revisao','Revisar minutas: só "Ministério Público", sem "Promotor(a)"']]}
 };
+
+/* Dicas e recomendações — extraídas dos documentos do Drive (GAECO e Guarabira, versão de 17/10/2026). */
+const DICAS = {
+  gaeco:[
+    ['Prazos e fluxo',[
+      ['Réu preso','prioridade absoluta, para evitar revogação por excesso de prazo por culpa do MP.','Dr. Daniel Dal Pont'],
+      ['Antecedência','minuta no sistema com folga antes do fim do prazo (orientação do grupo: 3 dias úteis; sua meta na Mesa é 4). Entrega no dia ou na véspera prejudica a análise.','Dr. Daniel e Marçal'],
+      ['Quem assina','até a denúncia: o gestor da investigação (Jamille, Dennys, Cartaxo, Rafael, Marko, Bruno). Pós-denúncia: Dr. Daniel Dal Pont — exceto Op. Adultização e Perfidus (Dr. Dennys) e Op. Hangar (Dr. Rafael). Em RA e alegações finais complexas, pode consultar o gestor original.','Marçal'],
+      ['Ao enviar a minuta','avisar o gestor no WhatsApp dizendo qual é a minuta e o prazo limite.','Marçal'],
+      ['Dúvida sem resposta','se o Dr. Daniel não responder até o fim do dia, lembrar no dia seguinte.','Dr. Daniel Dal Pont'],
+      ['Nomenclatura','alimentar a pasta Judicial do Drive e a pasta do caso na VPN: TIPO; CASO; OBJETO; Nº DOS AUTOS (ex.: MAN; PUÇÁ; DEPÓSITO DE MÍDIAS; 0808183-33.2026.8.15.2002).','Marçal'],
+      ['Ofício de mídias','salvar na pasta da investigação o ofício da Polícia que comprova a entrega de HDs/mídias em juízo.','Josélio / Marçal'],
+      ['Sobreaviso','em dia de deflagração, pode haver sobreaviso remoto a partir das 5h (rodízio avisado pelo Marçal) para consultas no Pandora.','Marçal']]],
+    ['Redação e teses',[
+      ['Jurisprudência','preferir STJ/STF; TJ de outros estados "atrapalha mais que ajuda". Do TJPB, de preferência de desembargador da mesma câmara.','Dr. Alberto Cartaxo / Daniel Lóssio'],
+      ['Esse x Este','"ESSE Juízo" ao se dirigir ao magistrado; "ESTA Fração Especializada" para o GAECO.','Dr. Daniel Dal Pont'],
+      ['Dano moral coletivo','em denúncias, AFs e recursos sobre facções: tópico próprio sobre o malefício concreto e abstrato, pedir fixação de valor (nem que por arbitramento) e instrução específica.','Dr. Daniel Dal Pont'],
+      ['Alegações finais','reenfrentar as preliminares defensivas, ainda que já rechaçadas, e incluir a dosimetria.','Daniel Lóssio / Tatiane'],
+      ['Emendatio x mutatio','mudou só a capitulação: emendatio nas AFs. Fato novo: aditamento. Processo que chega no início após conflito reconhecendo Orcrim: aditar a denúncia.','Lóssio, Tatiane, Sátyro'],
+      ['RA com vários réus','manifestar só sobre o urgente e aguardar todas as RAs para uma impugnação única (conglobante).','Paulo Costa / Lóssio'],
+      ['RA de novo advogado','preclusão consumativa em preliminar; subsidiariamente, rebater as preliminares.','Tatiane / Paulo'],
+      ['Acesso ao acervo bruto','bater na "disponibilização" do material e na "ausência de iniciativa" da defesa; nunca concordar com adiamento de RA por isso. Tema de prova digital pendente: tratar antes com o Dr. Daniel.','Dr. Rafael / Lóssio / Marçal'],
+      ['Sigilo','verificar se a ação penal ficou em segredo após a denúncia e pedir o levantamento; cautelar: "exaurido, levanta". Petição de "mesversário" se não apreciado.','Dr. Rafael / Dr. Daniel'],
+      ['Domiciliar de mãe','só deferir com prova documental da indispensabilidade dos cuidados; certidão de nascimento sozinha não basta.','Paulo Costa'],
+      ['Visita negada','antes de opinar, pedir ofício ao diretor do presídio para expor os motivos.','Josélio'],
+      ['Transferência de presídio','em regra, não oposição se houver vaga, a critério da Administração Penitenciária; consultar o gestor.','Neto'],
+      ['Certidão de óbito','conferir QR Code ou selo digital antes de opinar pela extinção; senão, pedir ofício ao registro civil.','Lóssio / Tatiane'],
+      ['Bens apreendidos','uso provisório só para a atividade-fim (viaturas, armas, informática), não para mobiliário. Laudo de veículo para alienação: cabe à Polícia. Celular obsoleto e CD (não probatório) após perdimento: destruição.','Josélio / Paulo']]],
+    ['Relatório de audiência',[
+      ['Prazo','enviar com 4 dias de antecedência ao Dr. Daniel Dal Pont e ao promotor gestor que fará a audiência.','Marçal'],
+      ['Mídias','conferir se HD, pendrive, DVD e dados brutos foram depositados, se há link e se a defesa teve acesso; se não, cota imediata.','Dr. Daniel Dal Pont'],
+      ['Testemunhas','atualizar endereços; PM/PC: requisição com matrícula e lotação; civil: Pandora e Infoseg. Policial requisitado que faltar: avisar o Dr. Octávio (Corregedoria / condução coercitiva).','Dr. Daniel / Dr. Octávio'],
+      ['Intimações','conferir réus (sobretudo presos) e advogados.','Dr. Daniel Dal Pont'],
+      ['Link','entrar nos autos e confirmar o link no dia, mesmo na Vara de Orcrim.','Dr. Dennys / Marçal / Tatiane'],
+      ['SEEU','em tráfico, roubo e reincidência, levantar condenações, penas e corréus.','Dr. Dennys Carneiro'],
+      ['Advogado ausente','intimado e faltou: defensor ad hoc (AgRg no RHC 109.088/MG; AgRg no HC 964.598/MT) ou cindir o processo. Não intimado: redesignar.','Dr. Rafael / Dr. Daniel'],
+      ['Testemunhas demais','pedir o decote de testemunhas abonatórias excessivas (standard da Op. Indignus).','Dr. Rafael / Lóssio']]],
+    ['Sistemas',[
+      ['Redistribuir no MPV','puxar para a sua caixa → "Encaminhar para redistribuição" → aba distribuição → distribuir ao membro certo → concluir.','Neto, Josélio, Tatiane'],
+      ['Marcador laranja','dois expedientes no mesmo processo: inserir a minuta no principal e "Vincular minuta" no outro (não usar "Responder como duplicado"). Se o promotor reinserir o arquivo, vincular de novo.','Marçal, Neto, Josélio'],
+      ['Erro ao anexar','insistir, sair e entrar de novo, ou salvar a peça em .ODT.','Marçal / Tatiane'],
+      ['PGA de audiência (Consigliere)','template do MPV, despacho, cópia da decisão que designou a audiência, marcador "Audiência" e enviar à caixa da Secretaria.','Marçal'],
+      ['PIC com prazo errado','despacho de 90 dias expedido com 15: cota pedindo a regularização (modelo do Josélio).','Marçal / Josélio'],
+      ['Caixa comum do MP','processo do GAECO que chegou atrasado: devolver e pedir reabertura de prazo.','Paulo / Tatiane'],
+      ['Declínio para Orcrim','só ciência da redistribuição; mérito apenas quando a Vara de Orcrim intimar o GAECO.','Marçal / Josélio'],
+      ['IDs ocultos no PJe','consultar o gestor; se nem ele vê, manifestar (com print) pedindo regularização e devolução integral do prazo.','Josélio'],
+      ['PJe Mídias fora','ligar para a DITEC.','Josélio'],
+      ['SEEU sem guia','pesquisar pelo nome completo ou CPF do réu.','Neto / Lóssio']]],
+    ['Materiais',[
+      ['Banco de jurisprudência do GAECO','docs.google.com/document/d/1YD3FGKeU8cJdHta24OZrRZwBUozpOP5Oy2pVM3uQrVI','Josélio'],
+      ['Súmulas e informativos (NotebookLM do TRF1)','notebooklm.google.com/notebook/9707137b-a5fb-44be-996b-f0b03bc3bbde','Daniel Lóssio'],
+      ['Modelos de negativa de atribuição','pasta do Josélio no Drive.','Josélio'],
+      ['Denúncia de referência','Op. Puçá (Dr. Rafael Linhares).','Marçal'],
+      ['APOIA','testar a transcrição e análise de contradições em depoimentos.','Dr. Alberto Cartaxo']]]
+  ],
+  guarabira:[
+    ['Atuação e redação',[
+      ['Regra de ouro','não gastar energia em questões individuais como custos legis; concentrar em ACP e patrimônio público.','Dr. Alyrio'],
+      ['Impessoalidade','só "Ministério Público"; nunca "Promotor(a) de Justiça" nas peças.','Dr. Alyrio'],
+      ['Parecer final','relatório completo e, na conclusão, o desfecho en passant ("O processo está pronto para receber a prestação jurisdicional e há elementos probatórios suficientes que sugerem a procedência…"). Nunca escrever que o MP "prefere não adentrar no mérito".','Dr. Alyrio'],
+      ['Ciência de audiência','pôr dia e horário do ato no texto da cota.','Dr. Alyrio'],
+      ['Ciência de sentença','avisar antes o Dr. Alyrio se cabe recurso, com os motivos. Na cota: há ou não interesse público, atuação como custos legis e o teor do julgamento.','Dr. Alyrio'],
+      ['Mandado de segurança','sem interesse público: relatório e mero prosseguimento.','Dr. Alyrio'],
+      ['Réplica','só se houver preliminar ou prejudicial de mérito; senão, cota simples dizendo que não é caso de manifestação.','Dr. Alyrio'],
+      ['Sigilo bancário','requisição direta de dados de contas de órgãos públicos é lícita (STJ, 5ª T., HC 308.493-CE).','Grupo']]],
+    ['Extrajudicial e audiências',[
+      ['Reiterações','1) ofício simples; 2) entrega pessoal com advertência; 3) audiência extrajudicial como última oportunidade; 4) requisição de IP (desobediência / art. 10 da LACP).','Dr. Alyrio'],
+      ['Antes da audiência','enviar resumo do procedimento, histórico de omissões e finalidade do ato.','Dr. Alyrio'],
+      ['Termo de audiência','texto corrido, sem lacunas (modelo do IC 001.2025.084778); justificar quando virtual; se ninguém comparecer, lavrar termo consignando a ausência.','Dr. Alyrio']]],
+    ['Formatação e fluxo',[
+      ['Local e data','alinhado como os demais parágrafos, sem pular linha antes.','Dr. Alyrio'],
+      ['Padrão tipográfico','usar os 3 arquivos de referência do Drive da 4ª PJ (judicial, extrajudicial e guia).','Dr. Alyrio'],
+      ['Pares e ímpares','você: finais pares; Ana Paula: ímpares. Extrajudicial: último número; judicial: o número antes do hífen.','Dr. Alyrio'],
+      ['Análise antecipada','em demandas acompanhadas (pós-audiência), analisar antes de o cartório abrir vista.','Dr. Alyrio'],
+      ['Processos presos','pedir ao cartório certidão atualizada de onde estão e mandar redistribuir.','Dr. Alyrio'],
+      ['Mensagens de madrugada','não precisa responder fora do horário.','Dr. Alyrio'],
+      ['Cartório','Jailson Alves (chefe de secretaria): (83) 99827-8419.','Contatos']]]
+  ],
+  caapora:[
+    ['Rotina',[
+      ['Divisão','você fica com os cíveis (improbidade, ACP, MS, família, infância protetiva, saúde); os penais são do colega, só ajuda se pedirem.','Você'],
+      ['Meta','manifestação antes da ciência: 1 dia útil antes do limite; se a ciência já expirou, entrega imediata.','Você'],
+      ['SEEU','baixar os processos e o atestado de pena; a peça é com o Neto.','Você']]]
+  ]
+};
+const URG_TIPOS = {relatorio:'Relatório de audiência', pga:'PGA de audiência', pgaout:'PGA', outra:'Outra urgência'};
+const RELAT_CK = [['midias','Mídias depositadas e acessíveis à defesa'],['testem','Testemunhas conferidas e endereços atualizados'],['intim','Réus e advogados intimados'],['link','Link da audiência conferido nos autos'],['seeu','SEEU consultado (condenações, penas, corréus)'],['envio','Enviado ao Dr. Daniel e ao promotor gestor']];
 const DEFAULT_CFG = {
   promotorias:{
     gaeco:{contagem:'corridos', meta:'prazo', metaDias:4, dobro:false},
@@ -672,12 +806,12 @@ function applySnapshot(j){
 }
 window.MesaApp = { snapshot, aplicar(j, salvar){ applySnapshot(j); try{ localStorage.setItem('mp_local', JSON.stringify(Object.assign({}, j))); }catch(e){} if(salvar) saveLocal(); render(); }, render:()=>render() };
 function loadLocal(){ try{ const j = JSON.parse(localStorage.getItem('mp_local')||'null'); if(j) applySnapshot(j); }catch(e){} }
-function mergeCfg(c){ const d = JSON.parse(JSON.stringify(DEFAULT_CFG)); const out = Object.assign(d, c||{}); out.promotorias = Object.assign({}, DEFAULT_CFG.promotorias); for(const k in DEFAULT_CFG.promotorias) out.promotorias[k] = Object.assign({}, DEFAULT_CFG.promotorias[k], (c&&c.promotorias&&c.promotorias[k])||{}); out.leituras = (c&&c.leituras)||{}; if((out.regrasV||0) < 3){ for(const k of ['gaeco','caapora','guarabira']){ out.promotorias[k].meta = DEFAULT_CFG.promotorias[k].meta; out.promotorias[k].metaDias = DEFAULT_CFG.promotorias[k].metaDias; } out.regrasV = 3; } return out; }
+function mergeCfg(c){ const d = JSON.parse(JSON.stringify(DEFAULT_CFG)); const out = Object.assign(d, c||{}); out.promotorias = Object.assign({}, DEFAULT_CFG.promotorias); for(const k in DEFAULT_CFG.promotorias) out.promotorias[k] = Object.assign({}, DEFAULT_CFG.promotorias[k], (c&&c.promotorias&&c.promotorias[k])||{}); out.leituras = (c&&c.leituras)||{}; out.colagens = (c&&c.colagens)||{}; if((out.regrasV||0) < 3){ for(const k of ['gaeco','caapora','guarabira']){ out.promotorias[k].meta = DEFAULT_CFG.promotorias[k].meta; out.promotorias[k].metaDias = DEFAULT_CFG.promotorias[k].metaDias; } out.regrasV = 3; } return out; }
 function cfgCalc(){ const c = clean(state.cfg); c._hoje = P.iso(today()); return c; }
 function calc(it){ const c = cfgCalc(); const it2 = Object.assign({}, it); if(it2.tipo!=='extra' && it2.prazoDiasOrig!=null){ const dob = c.promotorias[it2.prom] && c.promotorias[it2.prom].dobro; it2.prazoDias = it2.prazoDiasOrig*(dob?2:1); } P.recompute(it2,c); it.prazoFinal = it2.prazoFinal; it.meta = it2.meta; it.prazoDias = it2.prazoDias; return it; }
 
 async function boot(){
-  loadLocal(); render();
+  loadLocal(); state.carregado=true; render();
   let api = null; try{ api = !window.MesaHooks && window.claude && await window.claude.use('db'); }catch(e){}
   if(!api){ state.mode='local'; $('#status').textContent = window.MesaHooks ? 'Salvo automaticamente neste navegador.' : 'Salvando só neste navegador (banco do artefato indisponível nesta visualização).'; render(); if(window.MesaHooks && MesaHooks.ready) MesaHooks.ready(); return; }
   db = api; state.mode = 'db'; state.itens.clear();
@@ -700,14 +834,14 @@ const feitos = p => [...state.itens.values()].filter(i=>i.prom===p && i.status==
 function pct(p){ const all=[...state.itens.values()].filter(i=>i.prom===p); if(!all.length) return 0; const s = all.reduce((a,i)=>a+(i.status==='feito'?100:(i.progresso||0)),0); return Math.round(s/all.length); }
 const urg = it => P.urgencia(it, today(), cfgCalc());
 const URG_CHIP = {vencido:'danger',atrasado:'danger',hoje:'warn',amanha:'warn',semana:'info',depois:'',sem:''};
-function adiantar(){ return [...state.itens.values()].filter(i=>i.status!=='feito').map(i=>[i,urg(i)]).filter(([,u])=>u.ord<=3).sort((a,b)=>a[1].ord-b[1].ord || (a[0].meta||'').localeCompare(b[0].meta||'')); }
+function adiantar(){ return [...state.itens.values()].filter(i=>i.status!=='feito' && i.tipo!=='urgencia').map(i=>[i,urg(i)]).filter(([,u])=>u.ord<=3).sort((a,b)=>a[1].ord-b[1].ord || (a[0].meta||'').localeCompare(b[0].meta||'')); }
 
 /* ---------- render ---------- */
 function render(){
   const t = today();
   $('#hoje-txt').textContent = t.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}) + (P.isBusiness(t,cfgCalc()) ? '' : ' · dia não útil');
   const h = new Date().getHours(); $('#greet').textContent = (h<12?'Bom dia':h<18?'Boa tarde':'Boa noite')+', José';
-  $('#dayboard').innerHTML = dayboard(); renderJornada();
+  $('#dayboard').innerHTML = dayboard(); renderSituacao(); renderJornada();
   const ad = adiantar(); const venc = ad.filter(([,u])=>u.ord<=1).length;
   $('#sum').innerHTML = (venc?`<span class="chip danger">${venc} atrasado${venc>1?'s':''}</span>`:'') + `<span class="chip warn">${ad.length-venc} para adiantar agora</span>` + (()=>{const n=[...state.itens.values()].filter(i=>i.status==='feito').length; return `<span class="chip ok">${n} feito${n===1?'':'s'}</span>`;})();
   const tabs = [['hoje','Hoje',null,ad.length],['gaeco','GAECO','gaeco',pend('gaeco').length],['caapora','Caaporã','caapora',pend('caapora').length],['guarabira','Guarabira','guarabira',pend('guarabira').length],['feitos','Feitos',null,null],['ajustes','Ajustes',null,null]];
@@ -724,6 +858,66 @@ function render(){
   if(focusId){ const x=document.getElementById(focusId); if(x){ x.focus(); try{ if(sel!=null) x.setSelectionRange(sel,sel); }catch(_){} } }
   v.querySelectorAll('details[data-k]').forEach(d=>{ if(open.has(d.dataset.k)) d.open=true; });
 }
+
+/* ---------- situação do dia e comemoração ---------- */
+function urgs(){ return [...state.itens.values()].filter(i=>i.tipo==='urgencia'); }
+function checkTotal(){ let n=0,t=0; for(const p in PROMS){ for(const [k] of PROMS[p].fluxo){ t++; if(state.check[p+'_'+k]) n++; } } return {n,t}; }
+function situacao(){
+  const hoje = P.iso(today()); const util = P.isBusiness(today(), cfgCalc());
+  const all=[...state.itens.values()]; const ab = all.filter(i=>i.status!=='feito');
+  const pend=[], obs=[];
+  const atras = ab.filter(i=>i.meta && i.meta<hoje); const deHoje = ab.filter(i=>i.meta===hoje);
+  const venc = ab.filter(i=>urg(i).key==='vencido');
+  if(venc.length) pend.push(`${venc.length} com prazo final vencido: ${venc.slice(0,4).map(i=>i.processo||URG_TIPOS[i.urgTipo]).join(', ')}${venc.length>4?'…':''}`);
+  const at2 = atras.filter(i=>!venc.includes(i)); if(at2.length) pend.push(`${at2.length} com a meta já passada`);
+  if(deHoje.length) pend.push(`${deHoje.length} com meta para hoje`);
+  const u = urgs().filter(i=>i.status!=='feito');
+  const uHoje = u.filter(i=>i.meta && i.meta<=hoje); if(uHoje.length) pend.push(`Urgência${uHoje.length>1?'s':''} do GAECO para hoje: ${uHoje.map(i=>(URG_TIPOS[i.urgTipo]||'Urgência')+(i.processo?' · '+i.processo:'')).join('; ')}`);
+  const ck = checkTotal(); if(util && ck.n<ck.t) pend.push(`Análise diária das caixas: ${ck.n} de ${ck.t} itens marcados`);
+  // pontos de atenção
+  const presos = ab.filter(i=>(i.flags||[]).some(f=>/preso/i.test(f))); if(presos.length) obs.push(`${presos.length} com réu preso na fila — prioridade absoluta`);
+  const uProx = u.filter(i=>i.meta && i.meta>hoje && urg(i).ord<=4); if(uProx.length) obs.push(`${uProx.length} urgência${uProx.length>1?'s':''} vencendo nos próximos dias úteis`);
+  const rel = u.filter(i=>i.urgTipo==='relatorio' && i.ck && RELAT_CK.some(([k])=>!i.ck[k]) && i.meta && urg(i).ord<=4); if(rel.length) obs.push(`Relatório de audiência com checklist incompleto: ${rel.map(i=>i.processo||i.descricao).join(', ')}`);
+  const naCaixa = all.filter(i=>i.status==='feito' && i.aindaNaCaixa && i.aindaNaCaixa > (i.feitoMs||0)); if(naCaixa.length) obs.push(`${naCaixa.length} marcado${naCaixa.length>1?'s':''} como feito mas ainda na caixa colada (${naCaixa.slice(0,3).map(i=>i.processo).join(', ')}${naCaixa.length>3?'…':''}) — confira se a minuta foi juntada`);
+  const fora = ab.filter(i=>i.tipo==='judicial' && i.vistoEm && state.cfg.leituras[i.prom+'_judicial'] > i.vistoEm); if(fora.length) obs.push(`${fora.length} não estava${fora.length>1?'m':''} na última caixa colada — talvez já resolvido${fora.length>1?'s':''}; confira e remova`);
+  const duv = ab.filter(i=>i.area==='duvida'); if(duv.length) obs.push(`${duv.length} em Caaporã para conferir se é cível`);
+  const extraVenc = ab.filter(i=>i.tipo==='extra' && i.vencimento && i.vencimento<hoje); if(extraVenc.length) obs.push(`${extraVenc.length} extrajudicial(is) de Guarabira com prazo legal vencido — prorrogar ou encerrar`);
+  if(util){ const nao = Object.keys(PROMS).filter(p=>{ const l=state.cfg.leituras[p+'_judicial']; return !l || P.iso(new Date(l))!==hoje; }); if(nao.length) obs.push(`Caixa ainda não colada hoje: ${nao.map(p=>PROMS[p].nome).join(', ')}`); }
+  const metasOk = !atras.length && !deHoje.length && !uHoje.length && (!util || ck.n===ck.t);
+  return {pend, obs, metasOk};
+}
+function renderSituacao(){
+  const el=$('#situ'); if(!el) return; const s=situacao();
+  const cls = s.pend.length ? 'pend' : s.obs.length ? 'obs' : 'ok';
+  const titulo = s.pend.length ? `${s.pend.length} pendência${s.pend.length>1?'s':''} hoje` : (s.obs.length ? 'Tudo em dia — com pontos para observar' : 'Tudo em dia');
+  el.className = 'situ '+cls;
+  el.innerHTML = `<div class="sh"><span class="lbl">Situação do dia</span><span class="big">${titulo}</span>${s.metasOk?'<button class="btn sm" data-celebrar>Ver comemoração</button>':''}</div>
+    ${s.pend.length||s.obs.length?`<ul>${s.pend.map(t=>`<li class="p"><b>Pendente</b><span>${esc(t)}</span></li>`).join('')}${s.obs.map(t=>`<li class="o"><b>Observar</b><span>${esc(t)}</span></li>`).join('')}</ul>`:'<div class="small">Nada atrasado, nada para hoje e a análise das caixas está completa.</div>'}`;
+  const hoje=P.iso(today()); let ja=null; try{ ja=localStorage.getItem('mp_celebrado'); }catch(_){}
+  const algoHoje = [...state.itens.values()].some(i=>i.feitoEm===hoje) || checkTotal().n>0;
+  if(s.metasOk && algoHoje && ja!==hoje && state.carregado){ try{ localStorage.setItem('mp_celebrado',hoje); }catch(_){} celebrar(); }
+}
+function celebrar(){
+  const root=$('#celebra-root'); const s=situacao();
+  root.innerHTML = `<div class="celebra" role="dialog" aria-modal="true" aria-label="Trabalho concluído"><div class="card"><div class="check"><svg viewBox="0 0 40 40"><path d="M9 21l7 7 15-16"/></svg></div>
+    <h2>TRABALHO CONCLUÍDO</h2><p><b style="color:var(--ink);letter-spacing:.04em">PODE ESTUDAR OU TRABALHAR</b>${s.obs.length?'<br><span class="small">Ainda há '+s.obs.length+' ponto'+(s.obs.length>1?'s':'')+' para observar no painel.</span>':'<br>Tudo em dia.'}</p><button class="btn pri" data-fechar-celebra>Fechar</button></div></div>`;
+  const cores=['var(--ok)','var(--accent)','var(--c-gaeco)','var(--c-caapora)','var(--c-guarabira)','var(--warn)'];
+  if(!matchMedia('(prefers-reduced-motion: reduce)').matches) for(let k=0;k<70;k++){ const c=document.createElement('i'); c.className='confete'; c.style.left=Math.random()*100+'vw'; c.style.background=cores[k%cores.length]; c.style.animationDuration=(1.8+Math.random()*2)+'s'; c.style.animationDelay=(Math.random()*.6)+'s'; root.appendChild(c); }
+  setTimeout(()=>root.querySelectorAll('.confete').forEach(c=>c.remove()),4500);
+}
+
+/* ---------- virada do dia: zera checklist, cronômetros e metas à meia-noite ---------- */
+function virarDia(){
+  diaAtual = P.iso(today());
+  if(db){ location.reload(); return; }
+  if(state.timer.running){ const t=state.timer; t.used[t.running.prom]=(t.used[t.running.prom]||0)+Math.max(0,new Date(new Date().setHours(0,0,0,0))-t.running.since); t.running=null; }
+  state.check={}; state.timer={used:{gaeco:0,caapora:0,guarabira:0}, running:null, gaecoFechado:false}; state.alerted={}; state.drafts={};
+  saveLocal(); render(); toast('Novo dia: metas, checklist e cronômetros reiniciados');
+  agendarMeiaNoite();
+}
+let mnT=null;
+function agendarMeiaNoite(){ clearTimeout(mnT); const a=new Date(); const prox=new Date(a.getFullYear(),a.getMonth(),a.getDate()+1,0,0,1); mnT=setTimeout(()=>{ if(P.iso(today())!==diaAtual) virarDia(); }, prox-a); }
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible' && P.iso(today())!==diaAtual) virarDia(); });
 function usedNow(p){ let u=state.timer.used[p]||0; const r=state.timer.running; if(r&&r.prom===p) u+=Math.max(0,Date.now()-r.since); return u; }
 function tCalc(){
   const g=usedNow('gaeco'); const sobra = state.timer.gaecoFechado ? Math.max(0,BUDGET.gaeco-g) : 0;
@@ -762,7 +956,8 @@ function tick(){
   document.title = r ? `${fmt(c[r.prom].left)} · ${PROMS[r.prom].nome}` : 'Mesa de Prazos';
 }
 let diaAtual = P.iso(today());
-setInterval(()=>{ if(state.timer.running) tick(); if(P.iso(today())!==diaAtual){ diaAtual=P.iso(today()); if(db){ location.reload(); } else { loadLocal(); state.alerted={}; render(); } } }, 1000);
+setInterval(()=>{ if(state.timer.running) tick(); if(P.iso(today())!==diaAtual) virarDia(); }, 1000);
+agendarMeiaNoite();
 async function toggleTimer(p){
   const t=state.timer; const now=Date.now();
   if(t.running){ t.used[t.running.prom]=(t.used[t.running.prom]||0)+(now-t.running.since); const was=t.running.prom; t.running=null; if(was===p){ renderJornada(); await store.putTimer(); toast(`${PROMS[p].nome} pausado`); return; } }
@@ -802,6 +997,35 @@ function notasPanel(p){
    <form data-note-form="${p}"><textarea id="nn_${p}" placeholder="Ex.: Em ANPP, sempre pedir certidão de antecedentes atualizada."></textarea>
    <input id="no_${p}" placeholder="De quem (ex.: Dr. Fulano, 12/10)"><button class="btn pri sm" type="submit">Salvar lembrete</button></form></section>`;
 }
+
+function dicasPanel(p){
+  const d = DICAS[p]; if(!d) return '';
+  return `<section class="dicas" aria-label="Dicas ${PROMS[p].nome}"><h3>Dicas e recomendações</h3><input type="search" id="dq_${p}" data-dq="${p}" placeholder="Buscar nas dicas (ex.: preso, réplica, link)">
+   ${d.map(([sec,l],k)=>`<details data-k="d_${p}_${k}" data-dsec><summary>${esc(sec)} <span class="small muted">${l.length}</span></summary><ul>${l.map(([t,x,src])=>`<li data-dtxt="${esc((t+' '+x+' '+src).toLowerCase())}"><b>${esc(t)}:</b> ${esc(x)} <span class="src">— ${esc(src)}</span></li>`).join('')}</ul></details>`).join('')}</section>`;
+}
+function urgPanel(compacto){
+  const l = urgs().filter(i=>i.status!=='feito').sort((a,b)=>(a.meta||'').localeCompare(b.meta||''));
+  return `<section class="urg" aria-label="Urgências"><h3>Relatórios de audiência e urgências <span class="small muted">${l.length} aberta${l.length===1?'':'s'}</span></h3>
+   ${l.length?`<div class="list">${l.map(urgCard).join('')}</div>`:'<div class="small muted">Nenhuma urgência aberta.</div>'}
+   <details data-k="urgform" ${l.length?'':'open'}><summary class="small" style="cursor:pointer;color:var(--accent);font-weight:600">+ Nova urgência</summary>
+   <form data-urg-form style="margin-top:8px">
+     <label>Tipo<select id="u_tipo">${Object.entries(URG_TIPOS).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select></label>
+     <label>Promotoria<select id="u_prom">${Object.keys(PROMS).map(p=>`<option value="${p}" ${p==='gaeco'?'selected':''}>${PROMS[p].nome}</option>`).join('')}</select></label>
+     <label>Processo / caso<input id="u_proc" placeholder="0805846-72.2024… · Op. X"></label>
+     <label id="u_dlbl">Data da audiência / prazo<input type="date" id="u_data" required></label>
+     <label>Hora<input type="time" id="u_hora"></label>
+     <label class="wide">O que fazer<input id="u_desc" placeholder="Ex.: relatório para Dr. Daniel e o gestor; PGA com a decisão que designou"></label>
+     <div class="wide row"><button class="btn pri sm" type="submit">Adicionar urgência</button><span class="small muted">Relatório de audiência: a meta fica 4 dias antes da audiência.</span></div>
+   </form></details></section>`;
+}
+function urgCard(i){
+  const u = urg(i); const isRel = i.urgTipo==='relatorio';
+  const ck = isRel ? `<div class="uck">${RELAT_CK.map(([k,t])=>{const on=!!(i.ck&&i.ck[k]); return `<label class="${on?'done':''}"><input type="checkbox" data-uck="${k}" ${on?'checked':''}><span>${esc(t)}</span></label>`;}).join('')}</div>` : '';
+  return `<article class="item u-${u.key}" data-id="${esc(i.id)}"><div class="l1"><span class="pt ${i.prom}">${PROMS[i.prom].nome}</span><span class="chip danger">${esc(URG_TIPOS[i.urgTipo]||'Urgência')}</span>${i.processo?`<span class="proc">${esc(i.processo)}</span>`:''}<span class="chip ${URG_CHIP[u.key]}">${u.label}</span></div>
+   ${i.descricao?`<div class="cls">${esc(i.descricao)}</div>`:''}
+   <div class="dates">${isRel?`<div><span class="lbl">Audiência</span><b>${brI(i.limiteManifestacao)}${i.hora?' '+esc(i.hora):''} <span class="small muted">${rel(i.limiteManifestacao)}</span></b></div>`:`<div><span class="lbl">Prazo</span><b>${brI(i.limiteManifestacao)}${i.hora?' '+esc(i.hora):''}</b></div>`}<div class="${u.ord<=1?'bad':'hl'}"><span class="lbl">Fazer até</span><b>${brI(i.meta)} <span class="small muted">${rel(i.meta)}</span></b></div></div>
+   ${ck}<div class="row"><button class="btn sm pri" data-done>Concluída</button><button class="btn sm ghost" data-remove>Remover</button></div></article>`;
+}
 function checklistCard(p){
   const P_ = PROMS[p]; const n = P_.fluxo.filter(([k])=>state.check[p+'_'+k]).length;
   return `<div class="panel ck"><h3><span class="dot ${p}" style="width:10px;height:10px;border-radius:50%;display:inline-block"></span>${P_.nome}</h3>
@@ -837,7 +1061,7 @@ function viewHoje(){
   const fila = ad.length ? Object.values(grupos).map(({u,l})=>`<div class="group"><div class="gh"><span class="chip ${URG_CHIP[u.key]}">${u.label}</span><span class="small muted">${l.length}</span></div><div class="list focus">${l.map(i=>itemCard(i,true,motivo(i,u))).join('')}</div></div>`).join('')
     : `<div class="empty">Nada vencendo até o próximo dia útil. Cole as caixas nas abas das promotorias para atualizar.</div>`;
   const pins = fix.length ? `<div class="pinstrip one">${Object.keys(PROMS).map(p=>{const l=fix.filter(n=>n.prom===p); return l.length?`<div class="notes"><div class="pt ${p}">${PROMS[p].nome} · lembretes fixados</div><ul>${l.map(n=>notaLi(n,true)).join('')}</ul></div>`:'';}).join('')}</div>` : '';
-  return andamento + `<div class="layout" style="margin-top:28px"><div style="min-width:0"><div class="sechead"><h2>O que adiantar agora</h2><span class="small muted">Atrasados, de hoje e do próximo dia útil — com o porquê de cada um</span></div>${fila}</div>
+  return urgPanel() + '<div style="height:22px"></div>' + andamento + `<div class="layout" style="margin-top:28px"><div style="min-width:0"><div class="sechead"><h2>O que adiantar agora</h2><span class="small muted">Atrasados, de hoje e do próximo dia útil — com o porquê de cada um</span></div>${fila}</div>
    <aside><div class="sechead" style="margin:0"><h2>Análise diária</h2><span class="small muted">zera todo dia</span></div>${Object.keys(PROMS).map(checklistCard).join('')}${pins}</aside></div>`;
 }
 function regraTxt(p){
@@ -870,7 +1094,7 @@ function viewProm(p){
     <div class="prog" style="margin-top:8px"><strong>${v}%</strong><div class="bar ${v===100&&all?'ok':''}"><i style="width:${v}%"></i></div></div></section>`;
   if(p==='guarabira'){
     const sub = state.sub.guarabira;
-    const jud = pend(p).filter(i=>i.tipo!=='extra'), ext = pend(p).filter(i=>i.tipo==='extra');
+    const jud = pend(p).filter(i=>i.tipo!=='extra' && i.tipo!=='urgencia'), ext = pend(p).filter(i=>i.tipo==='extra');
     const fx = k => ext.filter(i=>P.faixaExtra(i,today())===k);
     body = `<div class="subtabs"><button data-sub="judiciais" aria-pressed="${sub==='judiciais'}">Judiciais · ${jud.length}</button><button data-sub="extra" aria-pressed="${sub==='extra'}">Extrajudiciais (pares) · ${ext.length}</button></div>`;
     if(sub==='judiciais') body += pasteBox(p,'judicial') + (jud.length?grouped(jud):`<div class="empty" style="margin-top:12px">Nenhum expediente judicial pendente.</div>`);
@@ -881,11 +1105,12 @@ function viewProm(p){
         + (lst.length ? `<div class="list">${lst.map(i=>itemCard(i)).join('')}</div>` : `<div class="empty">Nada nesta faixa.</div>`);
     }
   } else {
-    const l = pend(p);
+    const l = pend(p).filter(i=>i.tipo!=='urgencia');
     body = pasteBox(p,'judicial') + (p==='caapora' ? `<p class="note" style="margin-top:12px">Em Caaporã você fica com os <b>cíveis</b> (improbidade, ACP, MS, família, infância protetiva, saúde). Ao colar a caixa, os penais são separados e ficam com o colega; dá para incluir algum se ele pedir ajuda. A meta é sair <b>antes da ciência</b>. SEEU fica com o Neto — aqui você só registra o download dos processos e do atestado de pena no checklist do dia.</p>` : '')
       + (l.length ? grouped(l) : `<div class="empty" style="margin-top:12px">Nenhum expediente pendente. Cole a caixa acima.</div>`);
   }
-  return `<div class="layout"><div style="min-width:0">${head}<section>${body}</section></div><aside>${notasPanel(p)}${checklistCard(p)}</aside></div>`;
+  if(p==='gaeco') body = urgPanel() + '<div style="height:14px"></div>' + body;
+  return `<div class="layout"><div style="min-width:0">${head}<section>${body}</section></div><aside>${checklistCard(p)}${dicasPanel(p)}${notasPanel(p)}</aside></div>`;
 }
 function itemCard(i, showProm, why){
   const u = urg(i); const prog = i.progresso||0;
@@ -916,7 +1141,7 @@ function itemCard(i, showProm, why){
 function viewFeitos(){
   const list = [...state.itens.values()].filter(i=>i.status==='feito').sort((a,b)=>(b.feitoEm||'').localeCompare(a.feitoEm||''));
   if(!list.length) return `<div class="empty">Quando você marcar um item como feito, ele sai da fila e aparece aqui.</div>`;
-  return Object.keys(PROMS).map(p=>{ const l=list.filter(i=>i.prom===p); if(!l.length) return ''; return `<section><div class="sechead"><h2>${PROMS[p].nome}</h2><span class="small muted">${l.length} feito${l.length>1?'s':''}</span></div><div class="list">${l.map(i=>`<div class="feito" data-id="${esc(i.id)}"><span class="proc mono">${esc(i.processo)}</span><span class="grow">${esc(i.tipo==='extra'?(i.interessados||[]).join(' · '):i.classe)}${i.notas?` <span class="muted">— ${esc(i.notas)}</span>`:''}</span><span class="small muted">feito ${brI(i.feitoEm)}${i.meta?` · meta ${brI(i.meta)}`:''}</span>${i.meta && i.feitoEm && i.feitoEm<=i.meta?'<span class="chip ok">no prazo</span>':(i.meta?'<span class="chip warn">após a meta</span>':'')}<button class="btn sm" data-reopen>Reabrir</button></div>`).join('')}</div></section>`; }).join('');
+  return Object.keys(PROMS).map(p=>{ const l=list.filter(i=>i.prom===p); if(!l.length) return ''; return `<section><div class="sechead"><h2>${PROMS[p].nome}</h2><span class="small muted">${l.length} feito${l.length>1?'s':''}</span></div><div class="list">${l.map(i=>`<div class="feito" data-id="${esc(i.id)}"><span class="proc mono">${esc(i.processo)}</span><span class="grow">${esc(i.tipo==='extra'?(i.interessados||[]).join(' · '):i.tipo==='urgencia'?(URG_TIPOS[i.urgTipo]||'Urgência')+(i.descricao?' — '+i.descricao:''):i.classe)}${i.notas?` <span class="muted">— ${esc(i.notas)}</span>`:''}</span><span class="small muted">feito ${brI(i.feitoEm)}${i.meta?` · meta ${brI(i.meta)}`:''}</span>${i.meta && i.feitoEm && i.feitoEm<=i.meta?'<span class="chip ok">no prazo</span>':(i.meta?'<span class="chip warn">após a meta</span>':'')}<button class="btn sm" data-reopen>Reabrir</button></div>`).join('')}</div></section>`; }).join('');
 }
 function viewAjustes(){
   const c = state.cfg;
@@ -939,11 +1164,23 @@ function viewAjustes(){
 }
 
 /* ---------- leitura das caixas ---------- */
+function hashTxt(t){ const n=String(t||'').replace(/\s+/g,' ').trim(); let h=0x811c9dc5; for(let k=0;k<n.length;k++){ h^=n.charCodeAt(k); h=Math.imul(h,0x01000193); } return (h>>>0).toString(36)+'.'+n.length; }
+function jaColado(chave, txt){
+  const h=hashTxt(txt); const l=(state.cfg.colagens&&state.cfg.colagens[chave])||[]; const f=l.find(x=>x.h===h);
+  return {h, quando: f ? f.em : null};
+}
+async function registrarColagem(chave, h){
+  state.cfg.colagens = state.cfg.colagens||{}; const l=(state.cfg.colagens[chave]||[]).filter(x=>x.h!==h); l.unshift({h, em:Date.now()}); state.cfg.colagens[chave]=l.slice(0,40);
+}
+function avisoDup(quando){ return `<div class="dup" role="alert">Esse já foi copiado.<span>Este mesmo conteúdo foi colado em ${new Date(quando).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})}. Nada foi alterado — nenhum item foi criado, atualizado ou marcado.</span></div>`; }
+
 async function lerCaixa(p){
   const id = 'paste_'+p+'_judicial'; const txt = (document.getElementById(id)||{}).value||'';
+  const dup = txt.trim() ? jaColado(p+'_judicial', txt) : {};
+  if(dup.quando){ state.drafts[id] = avisoDup(dup.quando); document.getElementById(id).value=''; render(); toast('Esse já foi copiado — nada foi alterado'); return; }
   const lidos = P.parseCaixa(txt);
   if(!lidos.length){ state.drafts[id] = `<div class="note warn" style="margin-top:10px">Não encontrei nenhum "Expediente (número)" no texto. Copie a tabela inteira da caixa, incluindo as linhas de expediente.</div>`; render(); return; }
-  const agora = Date.now(); let novos=0, atual=0; const ign=[];
+  const agora = Date.now(); let novos=0, atual=0; const ign=[]; const jaFeitos=[];
   for(const x of lidos){
     const ar = P.classificaArea(x); x.area = ar.area; x.areaMotivo = ar.motivo;
     if(p==='guarabira'){ const dg = P.digitoJudicial(x.numOrigem); const par = state.cfg.paridade==='par'; if(dg==null || (dg%2===0)!==par){ x._motivo='dígito '+(dg==null?'?':dg)+' antes do hífen'; ign.push(x); continue; } }
@@ -952,12 +1189,14 @@ async function lerCaixa(p){
     const docId = 'j-'+p+'-'+x.expediente; const old = state.itens.get(docId);
     const base = Object.assign({}, x, {id:docId, prom:p, tipo:'judicial', prazoDiasOrig:x.prazoDias, vistoEm:agora});
     const it = old ? Object.assign({}, old, base, {prazoDiasOrig: old.prazoDiasEditado ? old.prazoDiasOrig : x.prazoDias, status:old.status, progresso:old.progresso, notas:old.notas, cienciaReal:x.cienciaReal||old.cienciaReal, metaManual:old.metaManual, feitoEm:old.feitoEm}) : Object.assign(base,{status:'pendente',progresso:0,notas:'',criadoEm:P.iso(today())});
+    if(old && old.status==='feito'){ it.aindaNaCaixa = agora; jaFeitos.push(it); }
     calc(it); old ? atual++ : novos++; await store.putItem(it);
   }
-  state.cfg.leituras[p+'_judicial'] = agora; await store.putCfg();
+  state.cfg.leituras[p+'_judicial'] = agora; await registrarColagem(p+'_judicial', dup.h); await store.putCfg();
   document.getElementById(id).value = '';
   const urgentes = lidos.map(x=>state.itens.get('j-'+p+'-'+x.expediente)).filter(i=>i && i.status!=='feito' && urg(i).ord<=3);
   state.drafts[id] = `<div class="res"><div class="note">Li <b>${lidos.length}</b> expediente${lidos.length>1?'s':''}: ${novos} novo${novos!==1?'s':''}, ${atual} atualizado${atual!==1?'s':''}${ign.length?`, ${ign.length} separado${ign.length>1?'s':''}`:''}. ${urgentes.length?`<b>${urgentes.length} para adiantar já:</b> ${urgentes.map(i=>esc(i.processo)+' (meta '+brI(i.meta)+')').join('; ')}.`:'Nenhum precisa ser adiantado até o próximo dia útil.'}</div>
+    ${jaFeitos.length?`<div class="note warn"><b>Atenção:</b> ${jaFeitos.length} expediente${jaFeitos.length>1?'s':''} já marcado${jaFeitos.length>1?'s':''} como feito continua${jaFeitos.length>1?'m':''} na caixa: ${jaFeitos.map(i=>esc(i.processo)).join('; ')}. Continua${jaFeitos.length>1?'m':''} como feito${jaFeitos.length>1?'s':''} — se a minuta ainda não foi juntada, use "Reabrir" na aba Feitos.</div>`:''}
     ${ign.length?`<div class="lbl" style="margin-top:6px">${p==='caapora'?'Separados — penais (colega) ou conclusos a outra pessoa':'Fora da sua paridade'}</div>`:''}
     ${ign.map(x=>`<div class="ign" data-ign="${esc(x.expediente)}"><span class="mono">${esc(x.processo)}</span><span class="grow" style="flex:1;min-width:160px">${esc(x.classe)}<span class="muted"> · ${esc(x._motivo)}</span></span><span class="small muted">ciência ${brI(x.cienciaReal||x.limiteCiencia)}</span><button class="btn sm" data-incl='${esc(JSON.stringify(Object.assign({},x,{_p:p})))}'>Incluir para ajudar</button></div>`).join('')}</div>`;
   render(); toast(novos+atual ? 'Caixa lida e organizada' : 'Nada novo na caixa');
@@ -980,6 +1219,8 @@ async function lerAgenda(p){
   const id='paste_'+p+'_extra'; const fi=document.getElementById('pdf_'+p); let txt=(document.getElementById(id)||{}).value||'';
   try{ if(fi && fi.files && fi.files[0]){ if(!window.pdfjsLib) throw new Error('leitor de PDF não carregou'); txt = await textoDoPdf(fi.files[0]); } }
   catch(e){ state.drafts[id]=`<div class="note warn" style="margin-top:10px">Não consegui ler o PDF (${esc(e.message)}). Abra o PDF, copie todo o texto e cole na caixa.</div>`; render(); return; }
+  const dupA = txt.trim() ? jaColado(p+'_extra', txt) : {};
+  if(dupA.quando){ state.drafts[id] = avisoDup(dupA.quando); if(fi) fi.value=''; const ta0=document.getElementById(id); if(ta0) ta0.value=''; render(); toast('Esse já foi copiado — nada foi alterado'); return; }
   const todos = P.parseAgenda(txt); const meus = P.filtraAgenda(todos, state.cfg);
   if(!todos.length){ state.drafts[id]=`<div class="note warn" style="margin-top:10px">Não encontrei números de procedimento (000.0000.000000) no conteúdo.</div>`; render(); return; }
   const agora=Date.now(); let novos=0;
@@ -988,7 +1229,7 @@ async function lerAgenda(p){
     const it = Object.assign({}, old||{status:'pendente',progresso:0,notas:'',criadoEm:P.iso(today())}, {id:docId, prom:p, tipo:'extra', processo:x.processo, interessados:x.interessados, distribuido:x.distribuido, inicio:x.inicio, vencimento:x.vencimento, vistoEm:agora});
     calc(it); if(!old) novos++; await store.putItem(it);
   }
-  state.cfg.leituras[p+'_extra']=agora; await store.putCfg();
+  state.cfg.leituras[p+'_extra']=agora; await registrarColagem(p+'_extra', dupA.h); await store.putCfg();
   const f = k => meus.filter(i=>P.faixaExtra(i,today())===k).length;
   state.drafts[id] = `<div class="note" style="margin-top:10px">A agenda tem <b>${todos.length}</b> procedimentos; <b>${meus.length}</b> são seus (${novos} novos): ${f('vencidos')} vencidos, ${f('vincendos')} vincendos, ${f('mais30')} com mais de 30 dias.</div>`;
   if(fi) fi.value=''; const ta=document.getElementById(id); if(ta) ta.value='';
@@ -1011,25 +1252,42 @@ document.addEventListener('click', async e=>{
     try{ await navigator.clipboard.writeText(PROMS[t.dataset.noteCopy].nome+' — lembretes\n'+txt); toast('Lembretes copiados'); }catch(_){ toast('Não consegui copiar; selecione o texto manualmente'); } return; }
   if(t.hasAttribute('data-zerar')){ if(state.armed!=='zerar'){ state.armed='zerar'; render(); setTimeout(()=>{ if(state.armed==='zerar'){ state.armed=null; render(); } },5000); return; }
     state.armed=null; const ids=[...state.itens.keys()]; if(db){ for(const id of ids) await db.doc('itens/'+id).delete(); } state.itens.clear(); state.cfg.leituras={}; state.drafts={}; await store.putCfg(); if(!db) saveLocal(); render(); toast(ids.length+' expedientes apagados'); return; }
+  if(t.hasAttribute('data-celebrar')){ celebrar(); return; }
+  if(t.hasAttribute('data-fechar-celebra')){ $('#celebra-root').innerHTML=''; return; }
   if(t.dataset.timer){ await toggleTimer(t.dataset.timer); return; }
   if(t.hasAttribute('data-fechar-gaeco')){ await fecharGaeco(); return; }
   if(t.dataset.ck){ state.check[t.dataset.ck]=t.checked; render(); await store.putCheck(); return; }
   const card = t.closest('[data-id]'); if(!card) return; const it = state.itens.get(card.dataset.id); if(!it) return;
   const upd = Object.assign({}, it);
-  if(t.dataset.prog!=null){ upd.progresso=+t.dataset.prog; if(upd.progresso===100){ upd.status='feito'; upd.feitoEm=P.iso(today()); } }
-  else if(t.hasAttribute('data-done')){ upd.status='feito'; upd.progresso=100; upd.feitoEm=P.iso(today()); }
-  else if(t.hasAttribute('data-reopen')){ upd.status='pendente'; upd.progresso=75; delete upd.feitoEm; }
+  if(t.dataset.prog!=null){ upd.progresso=+t.dataset.prog; if(upd.progresso===100){ upd.status='feito'; upd.feitoEm=P.iso(today()); upd.feitoMs=Date.now(); } }
+  else if(t.hasAttribute('data-done')){ upd.status='feito'; upd.progresso=100; upd.feitoEm=P.iso(today()); upd.feitoMs=Date.now(); }
+  else if(t.hasAttribute('data-reopen')){ upd.status='pendente'; upd.progresso=75; delete upd.feitoEm; delete upd.feitoMs; delete upd.aindaNaCaixa; }
+  else if(t.dataset.uck){ upd.ck = Object.assign({}, upd.ck||{}, {[t.dataset.uck]:t.checked}); }
   else if(t.hasAttribute('data-remove')){ await store.delItem(it.id); render(); toast('Removido'); return; }
   else return;
   await store.putItem(upd); render();
-  if(upd.status==='feito' && it.status!=='feito'){ const m=metaDia(); toast(m.alvo && m.devidos===0 ? 'Meta do dia cumprida! 🎉' : m.devidos ? `Feito! Faltam ${m.devidos} para fechar o dia` : 'Feito e movido para Feitos'); }
+  if(upd.status==='feito' && it.status!=='feito' && !situacao().metasOk){ const m=metaDia(); toast(m.alvo && m.devidos===0 ? 'Meta do dia cumprida! 🎉' : m.devidos ? `Feito! Faltam ${m.devidos} para fechar o dia` : 'Feito e movido para Feitos'); }
 });
 document.addEventListener('submit', async e=>{
+  if(e.target.hasAttribute('data-urg-form')){ e.preventDefault(); await novaUrgencia(); return; }
   const f=e.target; if(!f.dataset.noteForm) return; e.preventDefault(); const p=f.dataset.noteForm;
   const tx=document.getElementById('nn_'+p), og=document.getElementById('no_'+p); const texto=(tx.value||'').trim(); if(!texto){ tx.focus(); return; }
   const n={id:'n'+Date.now().toString(36)+Math.random().toString(36).slice(2,6), prom:p, texto, origem:(og.value||'').trim(), criadoEm:new Date().toISOString(), fixado:false};
   tx.value=''; og.value='';
   try{ await store.putNota(n); render(); toast('Lembrete salvo'); }catch(err){ tx.value=texto; toast('Não salvou ('+(err&&err.code||'erro')+'). Tente de novo.'); }
+});
+
+async function novaUrgencia(){
+  const v = id => (document.getElementById(id)||{}).value||'';
+  const tipo=v('u_tipo'), data=v('u_data'); if(!data){ toast('Informe a data'); return; }
+  let meta = data;
+  if(tipo==='relatorio'){ let m=P.addDays(P.fromISO(data),-4); const c=cfgCalc(); while(!P.isBusiness(m,c)) m=P.addDays(m,-1); meta=P.iso(m); if(meta<P.iso(today())) meta=P.iso(today()); }
+  const it={id:'u-'+Date.now().toString(36)+Math.random().toString(36).slice(2,5), tipo:'urgencia', urgTipo:tipo, prom:v('u_prom')||'gaeco', processo:v('u_proc').trim(), descricao:v('u_desc').trim(), hora:v('u_hora'), limiteManifestacao:data, metaManual:meta, status:'pendente', progresso:0, notas:'', criadoEm:P.iso(today()), ck:tipo==='relatorio'?{}:undefined};
+  calc(it); await store.putItem(it); ['u_proc','u_desc','u_data','u_hora'].forEach(id=>{ const x=document.getElementById(id); if(x) x.value=''; }); render(); toast((URG_TIPOS[tipo]||'Urgência')+' adicionada — fazer até '+brI(it.meta));
+}
+document.addEventListener('input', e=>{
+  const t=e.target; if(!t.dataset || !t.dataset.dq) return; const q=t.value.toLowerCase().trim(); const box=t.closest('.dicas');
+  box.querySelectorAll('[data-dsec]').forEach(d=>{ let n=0; d.querySelectorAll('li').forEach(li=>{ const ok=!q||li.dataset.dtxt.includes(q); li.hidden=!ok; if(ok) n++; }); d.hidden = !!q && !n; if(q) d.open = n>0; });
 });
 const notaTimers={};
 document.addEventListener('input', e=>{
