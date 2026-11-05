@@ -754,12 +754,12 @@ const URG_TIPOS = {relatorio:'Relatório de audiência', pga:'PGA de audiência'
 const RELAT_CK = [['midias','Mídias depositadas e acessíveis à defesa'],['testem','Testemunhas conferidas e endereços atualizados'],['intim','Réus e advogados intimados'],['link','Link da audiência conferido nos autos'],['seeu','SEEU consultado (condenações, penas, corréus)'],['envio','Enviado ao Dr. Daniel e ao promotor gestor']];
 const DEFAULT_CFG = {
   promotorias:{
-    gaeco:{contagem:'corridos', meta:'prazo', metaDias:4, dobro:false},
+    gaeco:{contagem:'uteis', meta:'prazo', metaDias:4, dobro:false},
     caapora:{contagem:'uteis', meta:'ciencia', metaDias:1, dobro:false, soCivel:true, conclusor:'JOSE OLIVEIRA', conclusorAte:'2026-10-31'},
     guarabira:{contagem:'uteis', meta:'prazo', metaDias:1, dobro:false}
   },
   feriadosExtras:['30/10/2026','08/12/2026'], recessoUteis:true,
-  cargoGuarabira:'4º Promotor', paridade:'par', leituras:{}, regrasV:3
+  cargoGuarabira:'4º Promotor', paridade:'par', leituras:{}, regrasV:4
 };
 const $ = s => document.querySelector(s);
 const esc = s => String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -796,7 +796,7 @@ function applySnapshot(j){
 }
 window.MesaApp = { snapshot, aplicar(j, salvar){ applySnapshot(j); try{ localStorage.setItem('mp_local', JSON.stringify(Object.assign({}, j))); }catch(e){} if(salvar) saveLocal(); render(); }, render:()=>render() };
 function loadLocal(){ try{ const j = JSON.parse(localStorage.getItem('mp_local')||'null'); if(j) applySnapshot(j); }catch(e){} }
-function mergeCfg(c){ const d = JSON.parse(JSON.stringify(DEFAULT_CFG)); const out = Object.assign(d, c||{}); out.promotorias = Object.assign({}, DEFAULT_CFG.promotorias); for(const k in DEFAULT_CFG.promotorias) out.promotorias[k] = Object.assign({}, DEFAULT_CFG.promotorias[k], (c&&c.promotorias&&c.promotorias[k])||{}); out.leituras = (c&&c.leituras)||{}; out.colagens = (c&&c.colagens)||{}; if((out.regrasV||0) < 3){ for(const k of ['gaeco','caapora','guarabira']){ out.promotorias[k].meta = DEFAULT_CFG.promotorias[k].meta; out.promotorias[k].metaDias = DEFAULT_CFG.promotorias[k].metaDias; } out.regrasV = 3; } return out; }
+function mergeCfg(c){ const d = JSON.parse(JSON.stringify(DEFAULT_CFG)); const out = Object.assign(d, c||{}); out.promotorias = Object.assign({}, DEFAULT_CFG.promotorias); for(const k in DEFAULT_CFG.promotorias) out.promotorias[k] = Object.assign({}, DEFAULT_CFG.promotorias[k], (c&&c.promotorias&&c.promotorias[k])||{}); out.leituras = (c&&c.leituras)||{}; out.colagens = (c&&c.colagens)||{}; if((out.regrasV||0) < 3){ for(const k of ['gaeco','caapora','guarabira']){ out.promotorias[k].meta = DEFAULT_CFG.promotorias[k].meta; out.promotorias[k].metaDias = DEFAULT_CFG.promotorias[k].metaDias; } out.regrasV = 3; } if((out.regrasV||0) < 4){ out.promotorias.gaeco.contagem = DEFAULT_CFG.promotorias.gaeco.contagem; out.regrasV = 4; } return out; }
 function cfgCalc(){ const c = clean(state.cfg); c._hoje = P.iso(today()); return c; }
 function calc(it){ const c = cfgCalc(); const it2 = Object.assign({}, it); if(it2.tipo!=='extra' && it2.prazoDiasOrig!=null){ const dob = c.promotorias[it2.prom] && c.promotorias[it2.prom].dobro; it2.prazoDias = it2.prazoDiasOrig*(dob?2:1); } P.recompute(it2,c); it.prazoFinal = it2.prazoFinal; it.meta = it2.meta; it.prazoDias = it2.prazoDias; return it; }
 
