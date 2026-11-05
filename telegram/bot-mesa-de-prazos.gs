@@ -4,6 +4,8 @@
  * Lê o arquivo "mesa-de-prazos.json" que a Mesa de Prazos grava no seu Google Drive
  * e manda no Telegram o que precisa de atenção: prazos vencidos, metas atrasadas,
  * o que vence hoje, urgências do GAECO, réu preso e caixas ainda não lidas.
+ * Um dia útil antes da meta de uma peça do GAECO, abre a mensagem com o aviso
+ * "AMANHÃ É O DIA DE ENVIAR A PEÇA DO GAECO DO PROCESSO ...".
  * Se estiver tudo feito, manda os parabéns e o próximo prazo.
  *
  * CONFIGURAR (uma vez):
@@ -59,6 +61,12 @@ function mensagem_(r, turno) {
   if (turno === 'manha') L.push('☀️ <b>Bom dia, José!</b> ' + dataExtenso_());
   else if (turno === 'tarde') L.push('🕑 <b>Como está a tarde?</b>');
   else L.push('🌙 <b>Fechamento do dia</b>');
+
+  // um dia antes: peças do GAECO com meta no próximo dia útil (mesmo aviso da Mesa)
+  if (r.avisos.length) {
+    L.push('');
+    r.avisos.forEach(function (a) { L.push('🔔 <b>' + esc_(a) + '</b>'); });
+  }
 
   if (emDia) {
     L.push('');
@@ -174,7 +182,23 @@ function analisar_(j) {
     .sort(function (a, b) { return a.s.ord - b.s.ord || (a.meta || '9').localeCompare(b.meta || '9'); });
   const proximo = ab.filter(function (i) { return i.meta && i.meta.slice(0, 10) >= h; })
     .sort(function (a, b) { return a.meta.localeCompare(b.meta); })[0] || null;
-  return { cfg: cfg, ab: ab, urg: urg, venc: venc, atras: atras, pend: pend, rotina: rotina, obs: obs, lista: lista, naoLidas: naoLidas, proximo: proximo, utilHoje: utilHoje };
+  return { cfg: cfg, ab: ab, urg: urg, venc: venc, atras: atras, pend: pend, rotina: rotina, obs: obs, lista: lista, naoLidas: naoLidas, proximo: proximo, utilHoje: utilHoje, avisos: avisosGaeco_(ab, cfg) };
+}
+
+/* Aviso de um dia antes: GAECO com meta no próximo dia útil (igual ao aviso do painel da Mesa). */
+function avisosGaeco_(ab, cfg) {
+  const h = hoje_();
+  let nx = new Date(h.getTime() + DIA); while (!util_(nx, cfg)) nx = new Date(nx.getTime() + DIA);
+  const nxIso = iso_(nx);
+  const sem = ['DOMINGO', 'SEGUNDA-FEIRA', 'TERÇA-FEIRA', 'QUARTA-FEIRA', 'QUINTA-FEIRA', 'SEXTA-FEIRA', 'SÁBADO'];
+  const quando = Math.round((nx - h) / DIA) === 1 ? 'AMANHÃ' : sem[nx.getDay()] + ' (' + br_(nxIso) + ')';
+  return ab.filter(function (i) { return i.prom === 'gaeco' && i.tipo !== 'tram30' && i.meta && i.meta.slice(0, 10) === nxIso; })
+    .map(function (i) {
+      const proc = i.processo ? ' DO PROCESSO ' + i.processo : '';
+      return i.tipo === 'urgencia'
+        ? quando + ' É O DIA DE ENVIAR ' + (TIPOS[i.urgTipo] || 'A URGÊNCIA').toUpperCase() + ' DO GAECO' + proc
+        : quando + ' É O DIA DE ENVIAR A PEÇA DO GAECO' + proc;
+    });
 }
 
 function situacao_(it, cfg) {
