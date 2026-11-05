@@ -182,17 +182,21 @@ details.more input{border:1px solid var(--line);border-radius:6px;padding:4px 8p
 .tmr .row .btn{flex:1}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 /* situação do dia */
-.situ{border-radius:12px;padding:14px 16px;margin-bottom:18px;display:grid;gap:10px;border:1px solid var(--line);background:var(--surface)}
-.situ.ok{background:var(--ok-soft);border-color:color-mix(in srgb,var(--ok) 35%,transparent)}
-.situ.pend{background:var(--danger-soft);border-color:color-mix(in srgb,var(--danger) 30%,transparent)}
-.situ.obs{background:var(--warn-soft);border-color:color-mix(in srgb,var(--warn) 30%,transparent)}
+.situ{margin-bottom:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;align-items:start}
+.situ .sc{border-radius:12px;padding:14px 16px;display:grid;gap:10px;border:1px solid var(--line);background:var(--surface)}
+.situ .sc.ok{background:var(--ok-soft);border-color:color-mix(in srgb,var(--ok) 35%,transparent)}
+.situ .sc.pend{background:var(--danger-soft);border-color:color-mix(in srgb,var(--danger) 30%,transparent)}
+.situ .sc.obs{background:var(--warn-soft);border-color:color-mix(in srgb,var(--warn) 30%,transparent)}
 .situ .sh{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}
 .situ .big{font-family:var(--f-display);font-weight:650;font-size:1.2rem}
-.situ.ok .big{color:var(--ok)} .situ.pend .big{color:var(--danger)} .situ.obs .big{color:var(--warn)}
-.situ ul{margin:0;padding:0;list-style:none;display:grid;gap:4px;font-size:.9rem}
+.situ .sc.ok .big{color:var(--ok)} .situ .sc.pend .big{color:var(--danger)} .situ .sc.obs .big{color:var(--warn)}
+.situ ul{margin:0;padding:0;list-style:none;display:grid;gap:6px;font-size:.9rem}
 .situ li{display:flex;gap:8px;align-items:baseline}
-.situ li b{font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;min-width:6.5em}
-.situ li.p b{color:var(--danger)} .situ li.o b{color:var(--warn)}
+.situ li::before{content:"";flex:none;width:6px;height:6px;border-radius:50%;transform:translateY(-1px)}
+.situ li.p::before{background:var(--danger)} .situ li.o::before{background:var(--warn)}
+.aviso{display:grid;gap:8px;margin-bottom:12px}
+.aviso:empty{display:none}
+.aviso .av{background:var(--warn-soft);border:1px solid color-mix(in srgb,var(--warn) 40%,transparent);border-left:5px solid var(--warn);border-radius:12px;padding:12px 16px;font-weight:700;letter-spacing:.01em;text-transform:uppercase;font-size:.95rem}
 /* urgências */
 .urg{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--danger);border-radius:var(--r);padding:14px;display:grid;gap:10px}
 .urg h3{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
@@ -229,6 +233,7 @@ details.more input{border:1px solid var(--line);border-radius:6px;padding:4px 8p
     </div>
     <div class="dayboard" id="dayboard"></div>
   </header>
+  <section class="aviso" id="aviso" aria-live="polite" aria-label="Aviso do dia"></section>
   <section class="situ" id="situ" aria-live="polite" aria-label="Situação do dia"></section>
   <section class="jornada" id="jornada" aria-label="Jornada de hoje"></section>
   <nav class="tabs" role="tablist" id="tabs"></nav>
@@ -876,13 +881,34 @@ function situacao(){
   const metasOk = !atras.length && !deHoje.length && !uHoje.length && (!util || ck.n===ck.t);
   return {pend, obs, metasOk};
 }
+/* Aviso do dia: peças do GAECO cuja meta cai no próximo dia útil ("um dia antes"). */
+function avisosGaeco(){
+  const hoje = today(), cfg = cfgCalc();
+  let nx = P.addDays(hoje,1); while(!P.isBusiness(nx,cfg)) nx = P.addDays(nx,1);
+  const nxIso = P.iso(nx);
+  const SEM = ['DOMINGO','SEGUNDA-FEIRA','TERÇA-FEIRA','QUARTA-FEIRA','QUINTA-FEIRA','SEXTA-FEIRA','SÁBADO'];
+  const quando = P.diffDays(hoje,nx)===1 ? 'AMANHÃ' : `${SEM[nx.getDay()]} (${P.br(nx)})`;
+  return [...state.itens.values()]
+    .filter(i=>i.prom==='gaeco' && i.status!=='feito' && i.tipo!=='tram30' && i.meta===nxIso)
+    .map(i=>{
+      const proc = i.processo ? ` DO PROCESSO ${i.processo}` : '';
+      return i.tipo==='urgencia'
+        ? `${quando} É O DIA DE ENVIAR ${(URG_TIPOS[i.urgTipo]||'A URGÊNCIA').toUpperCase()} DO GAECO${proc}`
+        : `${quando} É O DIA DE ENVIAR A PEÇA DO GAECO${proc}`;
+    });
+}
 function renderSituacao(){
+  const av=$('#aviso'); if(av) av.innerHTML = avisosGaeco().map(t=>`<div class="av" role="status">${esc(t)}</div>`).join('');
   const el=$('#situ'); if(!el) return; const s=situacao();
-  const cls = s.pend.length ? 'pend' : s.obs.length ? 'obs' : 'ok';
-  const titulo = s.pend.length ? `${s.pend.length} pendência${s.pend.length>1?'s':''} hoje` : (s.obs.length ? 'Tudo em dia — com pontos para observar' : 'Tudo em dia');
-  el.className = 'situ '+cls;
-  el.innerHTML = `<div class="sh"><span class="lbl">Situação do dia</span><span class="big">${titulo}</span></div>
-    ${s.pend.length||s.obs.length?`<ul>${s.pend.map(t=>`<li class="p"><b>Pendente</b><span>${esc(t)}</span></li>`).join('')}${s.obs.map(t=>`<li class="o"><b>Observar</b><span>${esc(t)}</span></li>`).join('')}</ul>`:'<div class="small">Nada atrasado, nada para hoje e a análise das caixas está completa.</div>'}`;
+  el.className = 'situ';
+  const lis = (l,c) => `<ul>${l.map(t=>`<li class="${c}"><span>${esc(t)}</span></li>`).join('')}</ul>`;
+  const pend = s.pend.length
+    ? `<div class="sc pend"><div class="sh"><span class="lbl">Pendente</span><span class="big">${s.pend.length} pendência${s.pend.length>1?'s':''} hoje</span></div>${lis(s.pend,'p')}</div>`
+    : `<div class="sc ok"><div class="sh"><span class="lbl">Pendente</span><span class="big">${s.obs.length?'Nada pendente hoje':'Tudo em dia'}</span></div><div class="small">Nada atrasado, nada para hoje e a análise das caixas está completa.</div></div>`;
+  const obs = s.obs.length
+    ? `<div class="sc obs"><div class="sh"><span class="lbl">Observar</span><span class="big">${s.obs.length} ponto${s.obs.length>1?'s':''} para observar</span></div>${lis(s.obs,'o')}</div>`
+    : '';
+  el.innerHTML = pend + obs;
 }
 
 /* ---------- virada do dia: zera checklist, cronômetros e metas à meia-noite ---------- */
