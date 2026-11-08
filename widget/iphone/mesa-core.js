@@ -3,12 +3,10 @@
 //
 // Núcleo do widget: é baixado e executado pelo script curto "Mesa de Prazos" no Scriptable.
 // Configuração (uma vez só):
-// 1. Instale "Google Drive" e "Scriptable" pela App Store e entre no Drive com a sua conta.
-// 2. No app Arquivos, abra Google Drive › Meu Drive e toque uma vez em mesa-de-prazos.json (para baixar).
-// 3. No Scriptable: Ajustes (engrenagem) › File Bookmarks › + › Pick File › escolha mesa-de-prazos.json
-//    e dê o nome exatamente: Mesa
-// 4. Crie um script novo no Scriptable, cole este código e rode uma vez (▶) para testar.
-// 5. Na tela de início: segure › + › Scriptable › tamanho MÉDIO › toque no widget › Script: este.
+// 1. No script do bot (Apps Script), rode ligarWidget e implante como App da Web (instruções lá).
+// 2. No Scriptable, rode o script "Mesa de Prazos" (▶) e cole o endereço .../exec?k=CHAVE quando pedir.
+// 3. Na tela de início: segure › + › Scriptable › MÉDIO ou GRANDE › toque no widget › Script: Mesa de Prazos.
+// O File Bookmark "Mesa" (arquivo do app Google Drive) continua como reserva, mas não é atualizado sozinho.
 
 const BOOKMARK = 'Mesa';
 const SITE = 'https://eujoseo.github.io/mesa-de-prazos/';
@@ -73,19 +71,40 @@ function situacaoItem(it, cfg) {
 }
 const COR_SIT = { vencido: C.vermelho, atrasado: C.vermelho, hoje: C.laranja, amanha: C.laranja, semana: C.azul, depois: C.fraco, sem: C.fraco };
 
-// ---------- leitura do arquivo (com cópia de reserva) ----------
+// ---------- leitura do arquivo (direto do Drive, com reservas) ----------
+// O app Google Drive do iPhone só baixa a versão nova do arquivo quando ele é aberto no app Arquivos,
+// então o File Bookmark fica com dados velhos. A leitura principal agora vem do app da Web do Apps Script
+// (função doGet do bot), cujo endereço fica guardado nas Chaves do Scriptable.
+const CHAVE_URL = 'mesa_url';
+async function pedirUrl() {
+  const a = new Alert(); a.title = 'Endereço da Mesa';
+  a.message = 'Cole o URL do app da Web do Apps Script com ?k=CHAVE no final (rode ligarWidget no script do bot para obter a chave).';
+  a.addTextField('https://script.google.com/macros/s/.../exec?k=...', Keychain.contains(CHAVE_URL) ? Keychain.get(CHAVE_URL) : '');
+  a.addAction('Salvar'); a.addCancelAction('Agora não');
+  if ((await a.present()) === 0) { const u = a.textFieldValue(0).trim(); if (/^https:\/\//.test(u)) Keychain.set(CHAVE_URL, u); }
+}
 async function lerMesa() {
   const fm = FileManager.local();
   const cache = fm.joinPath(fm.documentsDirectory(), 'mesa-de-prazos-cache.json');
+  if (!config.runsInWidget && !Keychain.contains(CHAVE_URL)) await pedirUrl();
   let txt = null, aviso = null;
-  if (!fm.bookmarkExists(BOOKMARK)) aviso = 'Crie o File Bookmark "Mesa" no Scriptable (veja as instruções no topo do script).';
-  else {
-    try { txt = fm.readString(fm.bookmarkedPath(BOOKMARK)); } catch (e) { txt = null; }
-    if (txt) fm.writeString(cache, txt);
-    else aviso = 'Não consegui abrir o arquivo do Drive agora; mostrando a última cópia.';
+  if (Keychain.contains(CHAVE_URL)) {
+    try {
+      const r = new Request(Keychain.get(CHAVE_URL)); r.timeoutInterval = 15;
+      const s = await r.loadString(), j = JSON.parse(s);
+      if (j && j.itens) txt = s; else aviso = j && j.erro ? 'Drive: ' + j.erro : 'Resposta inesperada do Drive.';
+    } catch (e) { aviso = 'Sem conexão com o Drive; mostrando a última cópia.'; }
   }
-  if (!txt && fm.fileExists(cache)) txt = fm.readString(cache);
-  if (!txt) return { erro: aviso || 'Arquivo da Mesa não encontrado.' };
+  if (!txt && fm.bookmarkExists(BOOKMARK)) {
+    try { const s = fm.readString(fm.bookmarkedPath(BOOKMARK)); if (s) txt = s; } catch (e) {}
+    if (txt && fm.fileExists(cache)) {           // não deixa o bookmark velho sobrescrever uma cópia mais nova
+      try { if ((JSON.parse(fm.readString(cache)).salvoEm || '') > (JSON.parse(txt).salvoEm || '')) txt = null; } catch (e) {}
+    }
+  }
+  if (txt) fm.writeString(cache, txt);
+  else if (fm.fileExists(cache)) txt = fm.readString(cache);
+  if (!txt) return { erro: aviso || 'Configure o endereço da Mesa: rode este script no app Scriptable.' };
+  if (!aviso && !Keychain.contains(CHAVE_URL)) aviso = 'Sem endereço do Drive: rode o script no app para configurar.';
   try { return { j: JSON.parse(txt), aviso }; } catch (e) { return { erro: 'O arquivo da Mesa está corrompido ou incompleto.' }; }
 }
 
@@ -234,6 +253,12 @@ function montarMedio(r, aviso, MAXI) {
   w.addSpacer();
   const rod = w.addStack();
   txt(rod, aviso ? '⚠︎ ' + aviso : (lista.length > MAX ? `+${lista.length - MAX} na fila · ` : '') + `${ab.length} em aberto`, 8.5, aviso ? C.laranja : C.fraco);
+  if (r.salvoEm) {
+    rod.addSpacer();
+    const df = new DateFormatter(); df.dateFormat = 'dd/MM HH:mm';
+    const velho = Date.now() - r.salvoEm.getTime() > 12 * 36e5;
+    txt(rod, 'salvo ' + df.string(r.salvoEm), 8.5, velho ? C.laranja : C.fraco);
+  }
   return w;
 }
 function telaErro(msg) {
@@ -249,6 +274,7 @@ const leitura = await lerMesa();
 const widget = leitura.erro ? telaErro(leitura.erro) : (() => {
   const r = analisar(leitura.j);
   const salvo = leitura.j.salvoEm ? new Date(leitura.j.salvoEm) : null;
+  r.salvoEm = salvo;
   const grande = config.widgetFamily === 'large';
   const w = grande ? montarMedio(r, leitura.aviso, 9) : montarMedio(r, leitura.aviso);
   if (false) {

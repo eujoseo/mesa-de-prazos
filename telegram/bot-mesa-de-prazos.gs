@@ -240,12 +240,35 @@ function diasUteisAte_(alvo, cfg) {
 
 /* ═════════════ Drive e Telegram ═════════════ */
 
-function lerMesa_() {
+function textoMesa_() {
   const it = DriveApp.getFilesByName(ARQUIVO);
   let arq = null;
   while (it.hasNext()) { const f = it.next(); if (f.isTrashed()) continue; if (!arq || f.getLastUpdated() > arq.getLastUpdated()) arq = f; }
   if (!arq) throw new Error('Não achei "' + ARQUIVO + '" no Drive. Conecte o Drive na Mesa de Prazos.');
-  return JSON.parse(arq.getBlob().getDataAsString('UTF-8'));
+  return arq.getBlob().getDataAsString('UTF-8');
+}
+function lerMesa_() { return JSON.parse(textoMesa_()); }
+
+/* ═════════════ widget do iPhone ═════════════
+ * O app Google Drive do iPhone não atualiza sozinho a cópia do arquivo que o Scriptable lê,
+ * então o widget busca o JSON direto daqui.
+ * 1. Rode "ligarWidget" uma vez e copie a chave do registro de execução.
+ * 2. Implantar › Nova implantação › Tipo: App da Web › Executar como: Eu › Quem pode acessar: Qualquer pessoa › Implantar.
+ * 3. Copie o URL do app da Web (termina em /exec) e acrescente ?k=CHAVE.
+ * 4. No Scriptable, rode o script "Mesa de Prazos" (▶) uma vez e cole esse endereço quando ele pedir.
+ */
+function ligarWidget() {
+  const props = PropertiesService.getScriptProperties();
+  let k = props.getProperty('WIDGET_KEY');
+  if (!k) { k = Utilities.getUuid().replace(/-/g, ''); props.setProperty('WIDGET_KEY', k); }
+  textoMesa_();
+  Logger.log('Chave do widget: ' + k + '\nEndereço para o Scriptable: URL_DO_APP_DA_WEB?k=' + k);
+}
+function doGet(e) {
+  const k = PropertiesService.getScriptProperties().getProperty('WIDGET_KEY');
+  const saida = ContentService.createTextOutput().setMimeType(ContentService.MimeType.JSON);
+  if (!k || !e || !e.parameter || e.parameter.k !== k) return saida.setContent(JSON.stringify({ erro: 'chave inválida' }));
+  try { return saida.setContent(textoMesa_()); } catch (err) { return saida.setContent(JSON.stringify({ erro: String(err.message || err) })); }
 }
 function tg_(metodo, corpo) {
   const token = PropertiesService.getScriptProperties().getProperty('TG_TOKEN') || TELEGRAM_TOKEN;
